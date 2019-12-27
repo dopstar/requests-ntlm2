@@ -4,17 +4,11 @@ requests-ntlm
 .. image:: https://travis-ci.org/dopstar/requests-ntlm2.svg?branch=master
     :target: https://travis-ci.org/dopstar/requests-ntlm2
 
-.. image:: https://coveralls.io/repos/github/requests/requests-ntlm/badge.svg?branch=master
-    :target: https://coveralls.io/github/requests/requests-ntlm?branch=master
-
 .. image:: https://img.shields.io/pypi/pyversions/requests-ntlm2.svg
     :target: https://pypi.python.org/pypi/requests-ntlm2
 
 .. image:: https://img.shields.io/pypi/v/requests-ntlm2.svg
     :target: https://pypi.python.org/pypi/requests-ntlm2
-
-.. image:: https://img.shields.io/coveralls/github/dopstar/requests-ntlm2.svg
-    :target: https://coveralls.io/github/dopstar/requests-ntlm2
 
 .. image:: https://img.shields.io/github/license/dopstar/requests-ntlm2.svg
     :target: https://raw.githubusercontent.com/dopstar/requests-ntlm2/master/LICENSE
