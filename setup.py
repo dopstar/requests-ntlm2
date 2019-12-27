@@ -1,7 +1,7 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 
-version = '6.0.1'
+version = '6.0.2'
 url = 'https://github.com/dopstar/requests-ntlm2'
 
 if 'a' in version:
@@ -12,7 +12,7 @@ else:
     dev_status = '5 - Production/Stable'
 
 
-with open('README.rst') as fd:
+with open('README.md') as fd:
     long_description = fd.read()
 
 
@@ -39,7 +39,9 @@ linting_requirements = [
 setup(
     name='requests_ntlm2',
     version=version,
-    packages=find_packages(exclude=['tests']),
+    packages=[
+        'requests_ntlm2',
+    ],
     install_requires=requirements,
     tests_require=testing_requirements,
     extras_require={
@@ -55,7 +57,7 @@ setup(
         ' the requests library.'
     ),
     long_description=long_description,
-    long_description_content_type='text/x-rst',
+    long_description_content_type='text/markdown',
     license='ISC',
     keywords=['NTLM', 'requests', 'proxy', 'authorization'],
     classifiers=[

@@ -1,4 +1,5 @@
 *.pyc
+.coverage
 .idea/
 *.swp
 env/
