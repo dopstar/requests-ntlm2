@@ -26,7 +26,6 @@ testing_requirements = [
     'flask',
     'pytest',
     'pytest-cov',
-    'pytest-xdist',
     'wheel',
 ]
 
