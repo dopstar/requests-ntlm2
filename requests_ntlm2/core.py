@@ -3,9 +3,9 @@ import logging
 import sys
 
 from cryptography import x509
+from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
-from cryptography.exceptions import UnsupportedAlgorithm
 from requests.packages.urllib3.response import HTTPResponse
 
 
@@ -48,8 +48,8 @@ def get_server_cert(response, send_cbt=False):
                 return get_certificate_hash(server_certificate)
         else:
             logger.warning(
-                "Requests is running with a non urllib3 backend,"
-                " cannot retrieve server certificate for CBT"
+                'Requests is running with a non urllib3 backend,'
+                ' cannot retrieve server certificate for CBT'
             )
     return None
 
@@ -62,8 +62,8 @@ def get_certificate_hash(certificate_der):
         hash_algorithm = cert.signature_hash_algorithm
     except UnsupportedAlgorithm:
         logger.exception(
-            "Failed to get signature algorithm from certificate, "
-            "unable to pass channel bindings. e=",
+            'Failed to get signature algorithm from certificate, '
+            'unable to pass channel bindings. e=',
         )
         return None
 

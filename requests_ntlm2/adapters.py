@@ -1,13 +1,11 @@
 import logging
 
 from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.connection import HTTPConnection, HTTPSConnection
 from requests.packages.urllib3.poolmanager import pool_classes_by_scheme
+
 from .connection import HTTPConnection as _HTTPConnection
 from .connection import HTTPSConnection as _HTTPSConnection
-from requests.packages.urllib3.connection import (
-    HTTPConnection,
-    HTTPSConnection,
-)
 
 
 logger = logging.getLogger(__name__)

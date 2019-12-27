@@ -1,10 +1,11 @@
 import base64
 import unittest
-import requests
-import requests_ntlm2
 import warnings
 
-from tests.test_utils import domain, username, password
+import requests
+
+import requests_ntlm2
+from tests.test_utils import domain, password, username
 
 
 class TestRequestsNtlm(unittest.TestCase):
@@ -338,11 +339,11 @@ class TestCertificateHash(unittest.TestCase):
                    b'D35JvzmqU05kSFV5eTvkhkaDObd7V55vokhm31+Li'
 
         expected_hash = None
-        expected_warning = "Failed to get signature algorithm from " \
-                           "certificate, unable to pass channel bindings:"
+        expected_warning = 'Failed to get signature algorithm from ' \
+                           'certificate, unable to pass channel bindings:'
 
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+            warnings.simplefilter('always')
             actual_hash = requests_ntlm2.requests_ntlm2._get_certificate_hash(
                 base64.b64decode(cert_der)
             )

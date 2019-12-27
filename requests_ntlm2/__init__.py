@@ -1,10 +1,7 @@
-from .requests_ntlm2 import HttpNtlmAuth
 from .adapters import HttpNtlmAdapter
-from .connection import (
-    HTTPConnection,
-    HTTPSConnection,
-    VerifiedHTTPSConnection,
-)
+from .connection import HTTPConnection, HTTPSConnection, VerifiedHTTPSConnection
+from .requests_ntlm2 import HttpNtlmAuth
+
 
 __all__ = (
     'HttpNtlmAuth',

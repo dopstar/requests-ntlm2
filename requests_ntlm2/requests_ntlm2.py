@@ -1,7 +1,7 @@
 from ntlm_auth import ntlm
 from requests.auth import AuthBase
 
-from .core import get_server_cert, get_auth_type_from_header
+from .core import get_auth_type_from_header, get_server_cert
 from .dance import HttpNtlmContext
 
 
@@ -21,7 +21,7 @@ class HttpNtlmAuth(AuthBase):
                               HTTPS channel (Default: True)
         """
         if ntlm is None:
-            raise Exception("NTLM libraries unavailable")
+            raise Exception('NTLM libraries unavailable')
 
         # parse the username
         try:
@@ -49,7 +49,7 @@ class HttpNtlmAuth(AuthBase):
             send_cbt=self.send_cbt
         )
 
-        """Attempt to authenticate using HTTP NTLM challenge/response."""
+        # Attempt to authenticate using HTTP NTLM challenge/response
         if auth_header in response.request.headers:
             return response
 
@@ -154,7 +154,7 @@ class HttpNtlmAuth(AuthBase):
     def __call__(self, r):
         # we must keep the connection because NTLM authenticates the
         # connection, not single requests
-        r.headers["Connection"] = "Keep-Alive"
+        r.headers['Connection'] = 'Keep-Alive'
 
         r.register_hook('response', self.response_hook)
         return r

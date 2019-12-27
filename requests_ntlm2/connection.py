@@ -1,16 +1,12 @@
 import logging
 import socket
 
-from requests.packages.urllib3.connection import (
-    HTTPConnection as _HTTPConnection,
-    HTTPSConnection as _HTTPSConnection,
-    VerifiedHTTPSConnection as _VerifiedHTTPSConnection,
-    DummyConnection
-)
-from requests.packages.six.moves.http_client import (
-    LineTooLong,
-    PROXY_AUTHENTICATION_REQUIRED
-)
+from requests.packages.six.moves.http_client import PROXY_AUTHENTICATION_REQUIRED, LineTooLong
+from requests.packages.urllib3.connection import DummyConnection
+from requests.packages.urllib3.connection import HTTPConnection as _HTTPConnection
+from requests.packages.urllib3.connection import HTTPSConnection as _HTTPSConnection
+from requests.packages.urllib3.connection import VerifiedHTTPSConnection as _VerifiedHTTPSConnection
+
 from .core import get_ntlm_credentials
 from .dance import HttpNtlmContext
 
@@ -41,19 +37,19 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
 
     def _get_header_bytes(self, proxy_auth_header=None):
         host, port = self._get_hostport(self._tunnel_host, self._tunnel_port)
-        http_connect_string = b"CONNECT {}:{} HTTP/1.0\r\n".format(
+        http_connect_string = b'CONNECT {}:{} HTTP/1.0\r\n'.format(
             host,
             port
         )
         header_bytes = http_connect_string
         if proxy_auth_header:
-            self._tunnel_headers["Proxy-Authorization"] = proxy_auth_header
-        self._tunnel_headers["Proxy-Connection"] = "Keep-Alive"
+            self._tunnel_headers['Proxy-Authorization'] = proxy_auth_header
+        self._tunnel_headers['Proxy-Connection'] = 'Keep-Alive'
         self._tunnel_headers['Host'] = '{}:{}'.format(host, port)
 
         for header, value in self._tunnel_headers.items():
-            header_str = "%s: %s\r\n" % (header, value)
-            header_bytes += header_str.encode("latin-1")
+            header_str = '%s: %s\r\n' % (header, value)
+            header_bytes += header_str.encode('latin-1')
         header_bytes += b'\r\n'
         return header_bytes
 
@@ -77,16 +73,16 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
 
         if code == PROXY_AUTHENTICATION_REQUIRED:
             authenticate_hdr = None
-            match_string = "Proxy-Authenticate: NTLM "
+            match_string = 'Proxy-Authenticate: NTLM '
             while True:
                 line = response.fp.readline()
-                if line.decode("utf-8").startswith(match_string):
-                    line = line.decode("utf-8")
+                if line.decode('utf-8').startswith(match_string):
+                    line = line.decode('utf-8')
                     ntlm_context.set_challenge_from_header(line)
                     authenticate_hdr = ntlm_context.get_authenticate_header()
 
                 if len(line) > _MAXLINE:
-                    raise LineTooLong("header line")
+                    raise LineTooLong('header line')
                 if not line:
                     # for sites which EOF without sending a trailer
                     break
@@ -100,7 +96,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         if code != 200:
             self.close()
             raise socket.error(
-                "Tunnel connection failed: %d %s" % (
+                'Tunnel connection failed: %d %s' % (
                     code,
                     message.strip()
                 )
@@ -108,7 +104,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         while True:
             line = response.fp.readline()
             if len(line) > _MAXLINE:
-                raise LineTooLong("header line")
+                raise LineTooLong('header line')
             if not line:
                 # for sites which EOF without sending trailer
                 break
