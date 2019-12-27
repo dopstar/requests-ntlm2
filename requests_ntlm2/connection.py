@@ -15,7 +15,7 @@ from .dance import HttpNtlmContext
 
 
 # maximal line length when calling readline().
-_MAXLINE = 65536s
+_MAXLINE = 65536
 
 logger = logging.getLogger(__name__)
 
