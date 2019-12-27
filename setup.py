@@ -36,7 +36,6 @@ linting_requirements = [
 ]
 
 
-
 setup(
     name='requests_ntlm2',
     version=version,
@@ -51,7 +50,10 @@ setup(
     author_email='mmadlavana@gmail.com',
     url=url,
     download_url='{url}/tarball/{version}'.format(url=url, version=version),
-    description='This package allows for HTTP NTLM authentication using the requests library.',
+    description=(
+        'This package allows for HTTP NTLM authentication using'
+        ' the requests library.'
+    ),
     long_description=long_description,
     long_description_content_type='text/x-rst',
     license='ISC',

@@ -24,7 +24,8 @@ class HttpNtlmAuth(AuthBase):
         :param str username: Username in 'domain\\username' format
         :param str password: Password
         :param str session: Unused. Kept for backwards-compatibility.
-        :param bool send_cbt: Will send the channel bindings over a HTTPS channel (Default: True)
+        :param bool send_cbt: Will send the channel bindings over a
+                              HTTPS channel (Default: True)
         """
         if ntlm is None:
             raise Exception("NTLM libraries unavailable")
@@ -41,9 +42,10 @@ class HttpNtlmAuth(AuthBase):
         self.password = password
         self.send_cbt = send_cbt
 
-        # This exposes the encrypt/decrypt methods used to encrypt and decrypt messages
-        # sent after ntlm authentication. These methods are utilised by libraries that
-        # call requests_ntlm to encrypt and decrypt the messages sent after authentication
+        # This exposes the encrypt/decrypt methods used to encrypt and decrypt
+        # messages sent after ntlm authentication. These methods are utilised
+        # by libraries that call requests_ntlm to encrypt and decrypt the
+        # messages sent after authentication
         self.session_security = None
 
     def retry_using_http_NTLM_auth(self, auth_header_field, auth_header,
@@ -72,7 +74,9 @@ class HttpNtlmAuth(AuthBase):
         # ntlm returns the headers as a base64 encoded bytestring. Convert to
         # a string.
         context = ntlm.Ntlm()
-        negotiate_message = context.create_negotiate_message(self.domain).decode('ascii')
+        negotiate_message = context.create_negotiate_message(
+            self.domain
+        ).decode('ascii')
         auth = u'%s %s' % (auth_type, negotiate_message)
         request.headers[auth_header] = auth
 
@@ -130,7 +134,8 @@ class HttpNtlmAuth(AuthBase):
         response3.history.append(response)
         response3.history.append(response2)
 
-        # Get the session_security object created by ntlm-auth for signing and sealing of messages
+        # Get the session_security object created by ntlm-auth for signing and
+        # sealing of messages
         self.session_security = context.session_security
 
         return response3
@@ -169,14 +174,17 @@ class HttpNtlmAuth(AuthBase):
 
     def _get_server_cert(self, response):
         """
-        Get the certificate at the request_url and return it as a hash. Will get the raw socket from the
-        original response from the server. This socket is then checked if it is an SSL socket and then used to
-        get the hash of the certificate. The certificate hash is then used with NTLMv2 authentication for
-        Channel Binding Tokens support. If the raw object is not a urllib3 HTTPReponse (default with requests)
-        then no certificate will be returned.
+        Get the certificate at the request_url and return it as a hash. Will
+        get the raw socket from the original response from the server. This
+        socket is then checked if it is an SSL socket and then used to get the
+        hash of the certificate. The certificate hash is then used with NTLMv2
+        authentication for Channel Binding Tokens support. If the raw object
+        is not a urllib3 HTTPReponse (default with requests) then no
+        certificate will be returned.
 
         :param response: The original 401 response from the server
-        :return: The hash of the DER encoded certificate at the request_url or None if not a HTTPS endpoint
+        :return: The hash of the DER encoded certificate at the
+                 request_url or None if not a HTTPS endpoint
         """
         if self.send_cbt:
             certificate_hash = None
@@ -193,11 +201,15 @@ class HttpNtlmAuth(AuthBase):
                 except AttributeError:
                     pass
                 else:
-                    certificate_hash = _get_certificate_hash(server_certificate)
+                    certificate_hash = _get_certificate_hash(
+                        server_certificate
+                    )
             else:
                 warnings.warn(
-                    "Requests is running with a non urllib3 backend, cannot retrieve server certificate for CBT",
-                    NoCertificateRetrievedWarning)
+                    "Requests is running with a non urllib3 backend,"
+                    " cannot retrieve server certificate for CBT",
+                    NoCertificateRetrievedWarning
+                )
 
             return certificate_hash
         else:
@@ -233,8 +245,11 @@ def _get_certificate_hash(certificate_der):
     try:
         hash_algorithm = cert.signature_hash_algorithm
     except UnsupportedAlgorithm as ex:
-        warnings.warn("Failed to get signature algorithm from certificate, "
-                      "unable to pass channel bindings: %s" % str(ex), UnknownSignatureAlgorithmOID)
+        warnings.warn(
+            "Failed to get signature algorithm from certificate, "
+            "unable to pass channel bindings: %s" % str(ex),
+            UnknownSignatureAlgorithmOID
+        )
         return None
 
     # if the cert signature algorithm is either md5 or sha1 then use sha256
@@ -246,7 +261,9 @@ def _get_certificate_hash(certificate_der):
 
     digest.update(certificate_der)
     certificate_hash_bytes = digest.finalize()
-    certificate_hash = binascii.hexlify(certificate_hash_bytes).decode().upper()
+    certificate_hash = binascii.hexlify(
+        certificate_hash_bytes
+    ).decode().upper()
 
     return certificate_hash
 
