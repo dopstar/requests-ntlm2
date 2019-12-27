@@ -1,11 +1,23 @@
 requests-ntlm
 =============
 
-.. image:: https://travis-ci.org/requests/requests-ntlm.svg?branch=master
-    :target: https://travis-ci.org/requests/requests-ntlm
+.. image:: https://travis-ci.org/dopstar/requests-ntlm2.svg?branch=master
+    :target: https://travis-ci.org/dopstar/requests-ntlm2
 
 .. image:: https://coveralls.io/repos/github/requests/requests-ntlm/badge.svg?branch=master
     :target: https://coveralls.io/github/requests/requests-ntlm?branch=master
+
+.. image:: https://img.shields.io/pypi/pyversions/requests-ntlm2.svg
+    :target: https://pypi.python.org/pypi/requests-ntlm2
+
+.. image:: https://img.shields.io/pypi/v/requests-ntlm2.svg
+    :target: https://pypi.python.org/pypi/requests-ntlm2
+
+.. image:: https://img.shields.io/coveralls/github/dopstar/requests-ntlm2.svg
+    :target: https://coveralls.io/github/dopstar/requests-ntlm2
+
+.. image:: https://img.shields.io/github/license/dopstar/requests-ntlm2.svg
+    :target: https://raw.githubusercontent.com/dopstar/requests-ntlm2/master/LICENSE
 
 This package allows for HTTP NTLM authentication using the requests library.
 
@@ -17,7 +29,7 @@ Usage
 .. code:: python
 
     import requests
-    from requests_ntlm import HttpNtlmAuth
+    from requests_ntlm2 import HttpNtlmAuth
 
     requests.get("http://ntlm_protected_site.com",auth=HttpNtlmAuth('domain\\username','password'))
     
@@ -29,7 +41,7 @@ NTLM challenge-response.
 .. code:: python
 
     import requests
-    from requests_ntlm import HttpNtlmAuth
+    from requests_ntlm2 import HttpNtlmAuth
 
     session = requests.Session()
     session.auth = HttpNtlmAuth('domain\\username','password')
@@ -38,7 +50,8 @@ NTLM challenge-response.
 Installation
 ------------
 
-    pip install requests_ntlm
+.. code:: python
+    pip install requests-ntlm2
 
 Requirements
 ------------
@@ -48,18 +61,3 @@ Requirements
 
 .. _requests: https://github.com/kennethreitz/requests/
 .. _ntlm-auth: https://github.com/jborean93/ntlm-auth
-
-Authors
--------
-
-- `Ben Toews`_
-
-.. _Ben Toews: https://github.com/mastahyeti
-
-- `Ian Cordasco`_
-
-.. _Ian Cordasco: https://github.com/sigmavirus24
-
-- `Cory Benfield`_
-
-.. _Cory Benfield: https://github.com/Lukasa

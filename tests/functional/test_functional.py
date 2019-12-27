@@ -1,5 +1,5 @@
 import requests
-import requests_ntlm
+import requests_ntlm2
 
 """
 This test is meant to run with Appveyor but until the integration is solved
@@ -54,7 +54,7 @@ def send_request(url, username, password):
     """
     session = requests.Session()
     session.verify = False
-    session.auth = requests_ntlm.HttpNtlmAuth(username, password)
+    session.auth = requests_ntlm2.HttpNtlmAuth(username, password)
     response = session.get(url)
 
     return response
