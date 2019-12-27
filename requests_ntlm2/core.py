@@ -1,6 +1,7 @@
 import binascii
 import logging
 import sys
+import warnings
 
 from cryptography import x509
 from cryptography.exceptions import UnsupportedAlgorithm
@@ -10,6 +11,10 @@ from requests.packages.urllib3.response import HTTPResponse
 
 
 logger = logging.getLogger(__name__)
+
+
+class UnknownSignatureAlgorithmOID(Warning):
+    pass
 
 
 def get_server_cert(response, send_cbt=False):
@@ -60,10 +65,12 @@ def get_certificate_hash(certificate_der):
 
     try:
         hash_algorithm = cert.signature_hash_algorithm
-    except UnsupportedAlgorithm:
-        logger.exception(
+    except UnsupportedAlgorithm as ex:
+        logger.exception('e=')
+        warnings.warn(
             'Failed to get signature algorithm from certificate, '
-            'unable to pass channel bindings. e=',
+            'unable to pass channel bindings: %s' % str(ex),
+            UnknownSignatureAlgorithmOID
         )
         return None
 
