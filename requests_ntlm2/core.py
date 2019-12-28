@@ -53,8 +53,8 @@ def get_server_cert(response, send_cbt=False):
                 return get_certificate_hash(server_certificate)
         else:
             logger.warning(
-                'Requests is running with a non urllib3 backend,'
-                ' cannot retrieve server certificate for CBT'
+                "Requests is running with a non urllib3 backend,"
+                " cannot retrieve server certificate for CBT"
             )
     return None
 
@@ -66,26 +66,24 @@ def get_certificate_hash(certificate_der):
     try:
         hash_algorithm = cert.signature_hash_algorithm
     except UnsupportedAlgorithm as ex:
-        logger.exception('e=')
+        logger.exception("e=")
         warnings.warn(
-            'Failed to get signature algorithm from certificate, '
-            'unable to pass channel bindings: %s' % str(ex),
-            UnknownSignatureAlgorithmOID
+            "Failed to get signature algorithm from certificate, "
+            "unable to pass channel bindings: %s" % str(ex),
+            UnknownSignatureAlgorithmOID,
         )
         return None
 
     # if the cert signature algorithm is either md5 or sha1 then use sha256
     # otherwise use the signature algorithm
-    if hash_algorithm.name in ['md5', 'sha1']:
+    if hash_algorithm.name in ["md5", "sha1"]:
         digest = hashes.Hash(hashes.SHA256(), default_backend())
     else:
         digest = hashes.Hash(hash_algorithm, default_backend())
 
     digest.update(certificate_der)
     certificate_hash_bytes = digest.finalize()
-    certificate_hash = binascii.hexlify(
-        certificate_hash_bytes
-    ).decode().upper()
+    certificate_hash = binascii.hexlify(certificate_hash_bytes).decode().upper()
 
     return certificate_hash
 
@@ -96,16 +94,16 @@ def get_auth_type_from_header(header):
     authentication type to use. We prefer NTLM over Negotiate if the server
     suppports it.
     """
-    if 'ntlm' in header:
-        return 'NTLM'
-    elif 'negotiate' in header:
-        return 'Negotiate'
+    if "ntlm" in header:
+        return "NTLM"
+    elif "negotiate" in header:
+        return "Negotiate"
     return None
 
 
 def get_ntlm_credentials(username, password):
     try:
-        domain, username = username.split('\\', 1)
+        domain, username = username.split("\\", 1)
     except ValueError:
-        domain = ''
+        domain = ""
     return username, password, domain

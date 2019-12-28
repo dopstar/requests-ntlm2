@@ -19,14 +19,14 @@ class HttpNtlmAuth(AuthBase):
                               HTTPS channel (Default: True)
         """
         if ntlm is None:
-            raise Exception('NTLM libraries unavailable')
+            raise Exception("NTLM libraries unavailable")
 
         # parse the username
         try:
-            self.domain, self.username = username.split('\\', 1)
+            self.domain, self.username = username.split("\\", 1)
         except ValueError:
             self.username = username
-            self.domain = ''
+            self.domain = ""
 
         if self.domain:
             self.domain = self.domain.upper()
@@ -39,21 +39,20 @@ class HttpNtlmAuth(AuthBase):
         # messages sent after authentication
         self.session_security = None
 
-    def retry_using_http_ntlm_auth(self, auth_header_field, auth_header,
-                                   response, auth_type, args):
+    def retry_using_http_ntlm_auth(
+        self, auth_header_field, auth_header, response, auth_type, args
+    ):
         # Get the certificate of the server if using HTTPS for CBT
-        server_certificate_hash = get_server_cert(
-            response,
-            send_cbt=self.send_cbt
-        )
+        server_certificate_hash = get_server_cert(response, send_cbt=self.send_cbt)
 
         # Attempt to authenticate using HTTP NTLM challenge/response
         if auth_header in response.request.headers:
             return response
 
         content_length = int(
-            response.request.headers.get('Content-Length', '0'), base=10)
-        if hasattr(response.request.body, 'seek'):
+            response.request.headers.get("Content-Length", "0"), base=10
+        )
+        if hasattr(response.request.body, "seek"):
             if content_length > 0:
                 response.request.body.seek(-content_length, 1)
             else:
@@ -70,7 +69,7 @@ class HttpNtlmAuth(AuthBase):
             self.password,
             domain=self.domain,
             auth_type=auth_type,
-            server_certificate_hash=server_certificate_hash
+            server_certificate_hash=server_certificate_hash,
         )
         request.headers[auth_header] = ntlm_context.get_negotiate_header()
 
@@ -94,13 +93,11 @@ class HttpNtlmAuth(AuthBase):
         # this is important for some web applications that store
         # authentication-related info in cookies (it took a long time to
         # figure out)
-        if response2.headers.get('set-cookie'):
-            request.headers['Cookie'] = response2.headers.get('set-cookie')
+        if response2.headers.get("set-cookie"):
+            request.headers["Cookie"] = response2.headers.get("set-cookie")
 
         # get the challenge
-        ntlm_context.set_challenge_from_header(
-            response2.headers[auth_header_field]
-        )
+        ntlm_context.set_challenge_from_header(response2.headers[auth_header_field])
 
         # build response
         # Get the response based on the challenge message
@@ -121,30 +118,20 @@ class HttpNtlmAuth(AuthBase):
         """The actual hook handler."""
         if r.status_code == 401:
             # Handle server auth.
-            www_authenticate = r.headers.get('www-authenticate', '').lower()
+            www_authenticate = r.headers.get("www-authenticate", "").lower()
             auth_type = get_auth_type_from_header(www_authenticate)
 
             if auth_type is not None:
                 return self.retry_using_http_ntlm_auth(
-                    'www-authenticate',
-                    'Authorization',
-                    r,
-                    auth_type,
-                    kwargs
+                    "www-authenticate", "Authorization", r, auth_type, kwargs
                 )
         elif r.status_code == 407:
             # If we didn't have server auth, do proxy auth.
-            proxy_authenticate = r.headers.get(
-                'proxy-authenticate', ''
-            ).lower()
+            proxy_authenticate = r.headers.get("proxy-authenticate", "").lower()
             auth_type = get_auth_type_from_header(proxy_authenticate)
             if auth_type is not None:
                 return self.retry_using_http_ntlm_auth(
-                    'proxy-authenticate',
-                    'Proxy-Authorization',
-                    r,
-                    auth_type,
-                    kwargs
+                    "proxy-authenticate", "Proxy-Authorization", r, auth_type, kwargs
                 )
 
         return r
@@ -152,12 +139,12 @@ class HttpNtlmAuth(AuthBase):
     def __call__(self, r):
         # we must keep the connection because NTLM authenticates the
         # connection, not single requests
-        r.headers['Connection'] = 'Keep-Alive'
+        r.headers["Connection"] = "Keep-Alive"
 
-        r.register_hook('response', self.response_hook)
+        r.register_hook("response", self.response_hook)
         return r
 
     def extract_username_and_password(self):
         if self.domain:
-            return '{}\\{}'.format(self.domain, self.username), self.password
+            return "{}\\{}".format(self.domain, self.username), self.password
         return self.username, self.password
