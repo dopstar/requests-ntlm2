@@ -10,9 +10,17 @@ logger = logging.getLogger(__name__)
 class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
     """Thin wrapper over ntlm_auth.ntlm.NtlmContext for HTTP"""
 
-    def __init__(self, username, password, domain=None, workstation=None,
-                 cbt_data=None, ntlm_compatibility=3, auth_type=None,
-                 server_certificate_hash=None):
+    def __init__(
+        self,
+        username,
+        password,
+        domain=None,
+        workstation=None,
+        cbt_data=None,
+        ntlm_compatibility=3,
+        auth_type=None,
+        server_certificate_hash=None,
+    ):
         r"""
         Initialises a NTLM context to use when authenticating using the NTLM
         protocol.
@@ -41,11 +49,9 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
         :param auth_type: either 'NTLM' or 'Negotiate'
         :param server_certificate_hash: the hash of the certificate from peer
         """
-        if auth_type not in ('NTLM', 'Negotiate'):
+        if auth_type not in ("NTLM", "Negotiate"):
             raise ValueError(
-                'Expected "NTLM" or "Negotiate" auth_type, got %s'.format(
-                    auth_type
-                )
+                'Expected "NTLM" or "Negotiate" auth_type, got %s'.format(auth_type)
             )
         self._auth_type = auth_type
         self._challenge_token = None
@@ -56,7 +62,7 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
             domain=domain,
             workstation=workstation,
             cbt_data=cbt_data,
-            ntlm_compatibility=ntlm_compatibility
+            ntlm_compatibility=ntlm_compatibility,
         )
 
     @property
@@ -103,10 +109,9 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
         return base64.b64encode(msg)
 
     def get_negotiate_header(self):
-        negotiate_message = self.create_negotiate_message().decode('ascii')
-        result = u'{auth_type} {negotiate_message}'.format(
-            auth_type=self._auth_type,
-            negotiate_message=negotiate_message
+        negotiate_message = self.create_negotiate_message().decode("ascii")
+        result = u"{auth_type} {negotiate_message}".format(
+            auth_type=self._auth_type, negotiate_message=negotiate_message
         )
         return result
 
@@ -115,28 +120,21 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
             return None
 
         match_strings = (
-            '{} '.format(self._auth_type),
-            '{}: {} '.format(
-                'Proxy-Authenticate',
-                self._auth_type
-            ),
-            '{}: {} '.format(
-                'WWW-Authenticate',
-                self._auth_type
-            )
+            "{} ".format(self._auth_type),
+            "{}: {} ".format("Proxy-Authenticate", self._auth_type),
+            "{}: {} ".format("WWW-Authenticate", self._auth_type),
         )
-        for header_value in raw_header_value.split(','):
+        for header_value in raw_header_value.split(","):
             header_value = header_value.strip()
             for auth_strip in match_strings:
                 if header_value.startswith(auth_strip):
-                    challenge = header_value.replace(auth_strip, '')
+                    challenge = header_value.replace(auth_strip, "")
                     return self.parse_challenge_message(challenge)
         return None
 
     def get_authenticate_header(self):
         authenticate_message = self.create_authenticate_message()
-        authenticate_message = authenticate_message.decode('ascii')
-        return u'{auth_type} {authenticate_message}'.format(
-            auth_type=self._auth_type,
-            authenticate_message=authenticate_message
+        authenticate_message = authenticate_message.decode("ascii")
+        return u"{auth_type} {authenticate_message}".format(
+            auth_type=self._auth_type, authenticate_message=authenticate_message
         )

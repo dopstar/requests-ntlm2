@@ -4,9 +4,9 @@ from .requests_ntlm2 import HttpNtlmAuth
 
 
 __all__ = (
-    'HttpNtlmAuth',
-    'HttpNtlmAdapter',
-    'HTTPConnection',
-    'HTTPSConnection',
-    'VerifiedHTTPSConnection'
+    "HttpNtlmAuth",
+    "HttpNtlmAdapter",
+    "HTTPConnection",
+    "HTTPSConnection",
+    "VerifiedHTTPSConnection",
 )
