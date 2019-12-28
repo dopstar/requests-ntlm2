@@ -17,7 +17,6 @@ with open('README.md') as fd:
 
 
 requirements = [
-    'aenum>=2.2.3',
     'requests>=2.0.0',
     'ntlm-auth>=1.0.2',
     'cryptography>=1.3',
@@ -32,7 +31,6 @@ testing_requirements = [
 
 linting_requirements = [
     'flake8',
-    'pylint',
     'bandit',
     'flake8-isort',
     'flake8-quotes',
