@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-version = '6.0.4'
+version = '6.0.5'
 url = 'https://github.com/dopstar/requests-ntlm2'
 
 if 'a' in version:
@@ -27,6 +27,8 @@ testing_requirements = [
     'pytest',
     'pytest-cov',
     'wheel',
+    'codeconv',
+    'coverage',
 ]
 
 linting_requirements = [

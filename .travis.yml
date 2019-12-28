@@ -17,7 +17,7 @@ script:
 - bandit -r requests_ntlm2
 - py.test --ignore=tests/functional/test_functional.py --ignore=tests/test_server.py --cov requests_ntlm2 --cov-report term-missing tests
 after_success:
-- coveralls
+- codeconv --token=eb6eedbf-63e1-49ab-a2a9-e8c9e806efe0
 deploy:
   provider: pypi
   user: dopstar
