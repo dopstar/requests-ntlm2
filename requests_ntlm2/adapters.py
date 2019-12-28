@@ -13,6 +13,9 @@ logger = logging.getLogger(__name__)
 
 class HttpNtlmAdapter(HTTPAdapter):
     def __init__(self, ntlm_username, ntlm_password, *args, **kwargs):
+        """
+        Thin wrapper around requests.adapters.HTTPAdapter
+        """
         logger.debug('%s()', self.__class__.__name__)
         self._setup(ntlm_username, ntlm_password)
         super(HttpNtlmAdapter, self).__init__(*args, **kwargs)
@@ -32,3 +35,4 @@ class HttpNtlmAdapter(HTTPAdapter):
     def _teardown():
         pool_classes_by_scheme['http'].ConnectionCls = HTTPConnection
         pool_classes_by_scheme['https'].ConnectionCls = HTTPSConnection
+        _HTTPSConnection.clear_ntlm_auth_credentials()

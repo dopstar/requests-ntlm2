@@ -34,6 +34,11 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         logger.debug('%s.set_ntlm_auth_credentials()', cls.__name__)
         cls._ntlm_credentials = get_ntlm_credentials(username, password)
 
+    @classmethod
+    def clear_ntlm_auth_credentials(cls):
+        cls._ntlm_credentials = None
+        del cls._ntlm_credentials
+
     def _get_response(self):
         response = self.response_class(self.sock, method=self._method)
         version, code, message = response._read_status()
