@@ -52,7 +52,7 @@ setup(
     author='Mkhanyisi Madlavana',
     author_email='mmadlavana@gmail.com',
     url=url,
-    download_url='{url}/tarball/{version}'.format(url=url, version=version),
+    download_url='{url}/archive/{version}.tar.gz'.format(url=url, version=version),
     description=(
         'This package allows for HTTP NTLM authentication using'
         ' the requests library.'
