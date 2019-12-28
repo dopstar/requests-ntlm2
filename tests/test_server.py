@@ -2,23 +2,24 @@ import base64
 import struct
 
 from flask import Flask, request
-from tests.test_utils import domain, username, password
+
+from tests.test_utils import domain, password, username
 
 
 app = Flask(__name__)
 
 
-@app.route("/ntlm")
+@app.route('/ntlm')
 def ntlm_auth():
     return get_auth_response('NTLM')
 
 
-@app.route("/negotiate")
+@app.route('/negotiate')
 def negotiate_auth():
     return get_auth_response('Negotiate')
 
 
-@app.route("/both")
+@app.route('/both')
 def negotiate_and_ntlm_auth():
     return get_auth_response('NTLM', advertise_nego_and_ntlm=True)
 
@@ -47,14 +48,14 @@ def get_auth_response(auth_type, advertise_nego_and_ntlm=False):
         signature = msg[0:8]
         if signature != expected_signature:
             raise ValueError(
-                "Mismatch on NTLM message signature,"
-                " expecting: %s, actual: %s" % (
+                'Mismatch on NTLM message signature,'
+                ' expecting: %s, actual: %s' % (
                     expected_signature,
                     signature
                 )
             )
         # Get the NTLM version number (bytes 9 - 12)
-        message_type = struct.unpack("<I", msg[8:12])[0]
+        message_type = struct.unpack('<I', msg[8:12])[0]
 
         if message_type == negotiate_message_type:
             # Initial NTLM message from client, attach challenge token
@@ -76,12 +77,12 @@ def get_auth_response(auth_type, advertise_nego_and_ntlm=False):
             # Should only ever receive a negotiate (1)
             # or auth (3) message from requests_ntlm
             raise ValueError(
-                "Mismatch on NTLM message type,"
-                " expecting: 1 or 3, actual: %d" % message_type
+                'Mismatch on NTLM message type,'
+                ' expecting: 1 or 3, actual: %d' % message_type
             )
 
     return response, status_code, response_headers
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run()

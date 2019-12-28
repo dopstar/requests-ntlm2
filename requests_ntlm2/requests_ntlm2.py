@@ -1,14 +1,8 @@
-import binascii
-import sys
-import warnings
-
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.exceptions import UnsupportedAlgorithm
 from ntlm_auth import ntlm
 from requests.auth import AuthBase
-from requests.packages.urllib3.response import HTTPResponse
+
+from .core import get_auth_type_from_header, get_server_cert
+from .dance import HttpNtlmContext
 
 
 class HttpNtlmAuth(AuthBase):
@@ -18,17 +12,16 @@ class HttpNtlmAuth(AuthBase):
     Supports pass-the-hash.
     """
 
-    def __init__(self, username, password, session=None, send_cbt=True):
+    def __init__(self, username, password, send_cbt=True):
         """Create an authentication handler for NTLM over HTTP.
 
         :param str username: Username in 'domain\\username' format
         :param str password: Password
-        :param str session: Unused. Kept for backwards-compatibility.
         :param bool send_cbt: Will send the channel bindings over a
                               HTTPS channel (Default: True)
         """
         if ntlm is None:
-            raise Exception("NTLM libraries unavailable")
+            raise Exception('NTLM libraries unavailable')
 
         # parse the username
         try:
@@ -48,12 +41,15 @@ class HttpNtlmAuth(AuthBase):
         # messages sent after authentication
         self.session_security = None
 
-    def retry_using_http_NTLM_auth(self, auth_header_field, auth_header,
+    def retry_using_http_ntlm_auth(self, auth_header_field, auth_header,
                                    response, auth_type, args):
         # Get the certificate of the server if using HTTPS for CBT
-        server_certificate_hash = self._get_server_cert(response)
+        server_certificate_hash = get_server_cert(
+            response,
+            send_cbt=self.send_cbt
+        )
 
-        """Attempt to authenticate using HTTP NTLM challenge/response."""
+        # Attempt to authenticate using HTTP NTLM challenge/response
         if auth_header in response.request.headers:
             return response
 
@@ -71,14 +67,14 @@ class HttpNtlmAuth(AuthBase):
         response.raw.release_conn()
         request = response.request.copy()
 
-        # ntlm returns the headers as a base64 encoded bytestring. Convert to
-        # a string.
-        context = ntlm.Ntlm()
-        negotiate_message = context.create_negotiate_message(
-            self.domain
-        ).decode('ascii')
-        auth = u'%s %s' % (auth_type, negotiate_message)
-        request.headers[auth_header] = auth
+        ntlm_context = HttpNtlmContext(
+            self.username,
+            self.password,
+            domain=self.domain,
+            auth_type=auth_type,
+            server_certificate_hash=server_certificate_hash
+        )
+        request.headers[auth_header] = ntlm_context.get_negotiate_header()
 
         # A streaming response breaks authentication.
         # This can be fixed by not streaming this request, which is safe
@@ -104,30 +100,13 @@ class HttpNtlmAuth(AuthBase):
             request.headers['Cookie'] = response2.headers.get('set-cookie')
 
         # get the challenge
-        auth_header_value = response2.headers[auth_header_field]
-
-        auth_strip = auth_type + ' '
-
-        ntlm_header_value = next(
-            s for s in (val.lstrip() for val in auth_header_value.split(','))
-            if s.startswith(auth_strip)
-        ).strip()
-
-        # Parse the challenge in the ntlm context
-        context.parse_challenge_message(ntlm_header_value[len(auth_strip):])
+        ntlm_context.set_challenge_from_header(
+            response2.headers[auth_header_field]
+        )
 
         # build response
         # Get the response based on the challenge message
-        authenticate_message = context.create_authenticate_message(
-            self.username,
-            self.password,
-            self.domain,
-            server_certificate_hash=server_certificate_hash
-        )
-        authenticate_message = authenticate_message.decode('ascii')
-        auth = u'%s %s' % (auth_type, authenticate_message)
-        request.headers[auth_header] = auth
-
+        request.headers[auth_header] = ntlm_context.get_authenticate_header()
         response3 = response2.connection.send(request, **args)
 
         # Update the history.
@@ -136,7 +115,7 @@ class HttpNtlmAuth(AuthBase):
 
         # Get the session_security object created by ntlm-auth for signing and
         # sealing of messages
-        self.session_security = context.session_security
+        self.session_security = ntlm_context.session_security
 
         return response3
 
@@ -145,10 +124,10 @@ class HttpNtlmAuth(AuthBase):
         if r.status_code == 401:
             # Handle server auth.
             www_authenticate = r.headers.get('www-authenticate', '').lower()
-            auth_type = _auth_type_from_header(www_authenticate)
+            auth_type = get_auth_type_from_header(www_authenticate)
 
             if auth_type is not None:
-                return self.retry_using_http_NTLM_auth(
+                return self.retry_using_http_ntlm_auth(
                     'www-authenticate',
                     'Authorization',
                     r,
@@ -160,11 +139,11 @@ class HttpNtlmAuth(AuthBase):
             proxy_authenticate = r.headers.get(
                 'proxy-authenticate', ''
             ).lower()
-            auth_type = _auth_type_from_header(proxy_authenticate)
+            auth_type = get_auth_type_from_header(proxy_authenticate)
             if auth_type is not None:
-                return self.retry_using_http_NTLM_auth(
+                return self.retry_using_http_ntlm_auth(
                     'proxy-authenticate',
-                    'Proxy-authorization',
+                    'Proxy-Authorization',
                     r,
                     auth_type,
                     kwargs
@@ -172,105 +151,10 @@ class HttpNtlmAuth(AuthBase):
 
         return r
 
-    def _get_server_cert(self, response):
-        """
-        Get the certificate at the request_url and return it as a hash. Will
-        get the raw socket from the original response from the server. This
-        socket is then checked if it is an SSL socket and then used to get the
-        hash of the certificate. The certificate hash is then used with NTLMv2
-        authentication for Channel Binding Tokens support. If the raw object
-        is not a urllib3 HTTPReponse (default with requests) then no
-        certificate will be returned.
-
-        :param response: The original 401 response from the server
-        :return: The hash of the DER encoded certificate at the
-                 request_url or None if not a HTTPS endpoint
-        """
-        if self.send_cbt:
-            certificate_hash = None
-            raw_response = response.raw
-
-            if isinstance(raw_response, HTTPResponse):
-                if sys.version_info > (3, 0):
-                    socket = raw_response._fp.fp.raw._sock
-                else:
-                    socket = raw_response._fp.fp._sock
-
-                try:
-                    server_certificate = socket.getpeercert(True)
-                except AttributeError:
-                    pass
-                else:
-                    certificate_hash = _get_certificate_hash(
-                        server_certificate
-                    )
-            else:
-                warnings.warn(
-                    "Requests is running with a non urllib3 backend,"
-                    " cannot retrieve server certificate for CBT",
-                    NoCertificateRetrievedWarning
-                )
-
-            return certificate_hash
-        else:
-            return None
-
     def __call__(self, r):
         # we must keep the connection because NTLM authenticates the
         # connection, not single requests
-        r.headers["Connection"] = "Keep-Alive"
+        r.headers['Connection'] = 'Keep-Alive'
 
         r.register_hook('response', self.response_hook)
         return r
-
-
-def _auth_type_from_header(header):
-    """
-    Given a WWW-Authenticate or Proxy-Authenticate header, returns the
-    authentication type to use. We prefer NTLM over Negotiate if the server
-    suppports it.
-    """
-    if 'ntlm' in header:
-        return 'NTLM'
-    elif 'negotiate' in header:
-        return 'Negotiate'
-
-    return None
-
-
-def _get_certificate_hash(certificate_der):
-    # https://tools.ietf.org/html/rfc5929#section-4.1
-    cert = x509.load_der_x509_certificate(certificate_der, default_backend())
-
-    try:
-        hash_algorithm = cert.signature_hash_algorithm
-    except UnsupportedAlgorithm as ex:
-        warnings.warn(
-            "Failed to get signature algorithm from certificate, "
-            "unable to pass channel bindings: %s" % str(ex),
-            UnknownSignatureAlgorithmOID
-        )
-        return None
-
-    # if the cert signature algorithm is either md5 or sha1 then use sha256
-    # otherwise use the signature algorithm
-    if hash_algorithm.name in ['md5', 'sha1']:
-        digest = hashes.Hash(hashes.SHA256(), default_backend())
-    else:
-        digest = hashes.Hash(hash_algorithm, default_backend())
-
-    digest.update(certificate_der)
-    certificate_hash_bytes = digest.finalize()
-    certificate_hash = binascii.hexlify(
-        certificate_hash_bytes
-    ).decode().upper()
-
-    return certificate_hash
-
-
-class NoCertificateRetrievedWarning(Warning):
-    pass
-
-
-class UnknownSignatureAlgorithmOID(Warning):
-    pass

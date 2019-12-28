@@ -1,5 +1,7 @@
 import requests
+
 import requests_ntlm2
+
 
 """
 This test is meant to run with Appveyor but until the integration is solved
