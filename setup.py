@@ -27,7 +27,7 @@ testing_requirements = [
     'pytest',
     'pytest-cov',
     'wheel',
-    'codeconv',
+    'codecov',
     'coverage',
 ]
 
