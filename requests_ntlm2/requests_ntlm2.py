@@ -8,8 +8,6 @@ from .dance import HttpNtlmContext
 class HttpNtlmAuth(AuthBase):
     """
     HTTP NTLM Authentication Handler for Requests.
-
-    Supports pass-the-hash.
     """
 
     def __init__(self, username, password, send_cbt=True):
@@ -158,3 +156,8 @@ class HttpNtlmAuth(AuthBase):
 
         r.register_hook('response', self.response_hook)
         return r
+
+    def extract_username_and_password(self):
+        if self.domain:
+            return '{}\\{}'.format(self.domain, self.username), self.password
+        return self.username, self.password
