@@ -129,7 +129,7 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
             header_value = header_value.strip()
             for auth_strip in match_strings:
                 if header_value.startswith(auth_strip):
-                    _, challenge = header_value.split(None, 1)
+                    challenge = header_value.replace(auth_strip, '')
                     return self.parse_challenge_message(challenge)
         return None
 

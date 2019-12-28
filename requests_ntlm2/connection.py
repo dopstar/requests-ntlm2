@@ -29,9 +29,10 @@ class HTTPSConnection(_HTTPSConnection):
 
 
 class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
-
-    def set_ntlm_auth_credentials(self, username, password):
-        self._ntlm_credentials = get_ntlm_credentials(username, password)
+    @classmethod
+    def set_ntlm_auth_credentials(cls, username, password):
+        logger.debug('%s.set_ntlm_auth_credentials()', cls.__name__)
+        cls._ntlm_credentials = get_ntlm_credentials(username, password)
 
     def _get_response(self):
         response = self.response_class(self.sock, method=self._method)
@@ -60,6 +61,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         logger.debug('%s._tunnel', self.__class__.__name__)
 
         username, password, domain = self._ntlm_credentials
+
         ntlm_context = HttpNtlmContext(
             username,
             password,
@@ -92,7 +94,9 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                 if line in (b'\r\n', b'\n', b''):
                     break
 
-            self._get_header_bytes(proxy_auth_header=authenticate_hdr)
+            header_bytes = self._get_header_bytes(
+                proxy_auth_header=authenticate_hdr
+            )
             self.send(header_bytes)
             version, code, message, response = self._get_response()
 
