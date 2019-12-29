@@ -10,28 +10,28 @@ from .connection import HTTPSConnection as _HTTPSConnection
 
 class HttpProxyAdapter(HTTPAdapter):
     def _add_host_header(self, request):
-        if request.headers.get('Host'):
+        if request.headers.get("Host"):
             if self._is_valid_host_header(request):
                 return
             else:
                 self._remove_host_header(request)
 
         parse_result = urlparse.urlparse(request.url)
-        if parse_result.scheme == 'http':
+        if parse_result.scheme == "http":
             if parse_result.port == 80:
-                request.headers['Host'] = parse_result.hostname
+                request.headers["Host"] = parse_result.hostname
             else:
-                request.headers['Host'] = parse_result.netloc
+                request.headers["Host"] = parse_result.netloc
 
     @staticmethod
     def _is_valid_host_header(request):
-        host = request.headers.get('Host')
+        host = request.headers.get("Host")
         if not host:
             return False
         parse_result = urlparse.urlparse(request.url)
-        if parse_result.scheme == 'http' and parse_result.port == 80:
+        if parse_result.scheme == "http" and parse_result.port == 80:
             return False
-        elif parse_result.scheme == 'https':
+        elif parse_result.scheme == "https":
             if host == parse_result.netloc and parse_result.port is not None:
                 return True
         return False
@@ -39,7 +39,7 @@ class HttpProxyAdapter(HTTPAdapter):
     @staticmethod
     def _remove_host_header(request):
         try:
-            del request.headers['Host']
+            del request.headers["Host"]
         except KeyError:
             pass
 
