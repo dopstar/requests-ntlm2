@@ -1,4 +1,7 @@
-import urlparse
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
 
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.connection import HTTPConnection, HTTPSConnection
