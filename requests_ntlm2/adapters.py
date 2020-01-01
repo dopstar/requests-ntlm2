@@ -32,9 +32,7 @@ class HttpProxyAdapter(HTTPAdapter):
         if not host:
             return False
         parse_result = urlparse.urlparse(request.url)
-        if parse_result.scheme == "http" and parse_result.port == 80:
-            return False
-        elif parse_result.scheme == "https":
+        if parse_result.scheme == "https":
             if host == parse_result.netloc and parse_result.port is not None:
                 return True
         return False
