@@ -1,6 +1,6 @@
 import unittest
-import mock
 
+import mock
 import requests.adapters
 import requests.sessions
 

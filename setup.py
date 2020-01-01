@@ -29,7 +29,7 @@ testing_requirements = [
     "wheel",
     "codecov",
     "coverage",
-    'mock',
+    "mock",
 ]
 
 linting_requirements = [
