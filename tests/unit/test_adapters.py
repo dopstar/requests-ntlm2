@@ -3,8 +3,10 @@ import unittest
 import mock
 import requests.adapters
 import requests.sessions
+from requests.packages.urllib3.connection import HTTPConnection, HTTPSConnection
 
 import requests_ntlm2.adapters
+import requests_ntlm2.connection
 
 
 class TestHttpProxyAdapter(unittest.TestCase):
@@ -55,3 +57,55 @@ class TestHttpProxyAdapter(unittest.TestCase):
         request = requests.Request(url="http://github.com:80")
         self.assertIsNone(adapter.add_headers(request))
         mock_add_host_header.assert_called_once_with(request)
+
+
+class TestHttpNtlmAdapter(unittest.TestCase):
+    @mock.patch("requests_ntlm2.adapters.HttpNtlmAdapter._teardown")
+    @mock.patch("requests_ntlm2.adapters.HttpNtlmAdapter._setup")
+    def test_init(self, mock_setup, mock_teardown):
+        adapter = requests_ntlm2.adapters.HttpNtlmAdapter("username", "password")
+        self.assertIsInstance(adapter, requests_ntlm2.adapters.HttpNtlmAdapter)
+        self.assertIsInstance(adapter, requests_ntlm2.adapters.HttpProxyAdapter)
+        self.assertIsInstance(adapter, requests.adapters.HTTPAdapter)
+        mock_setup.assert_called_once_with("username", "password")
+        mock_teardown.assert_not_called()
+
+    @mock.patch("requests_ntlm2.adapters.HttpNtlmAdapter._teardown")
+    @mock.patch("requests_ntlm2.adapters.HttpNtlmAdapter._setup")
+    def close(self, mock_setup, mock_teardown):
+        adapter = requests_ntlm2.adapters.HttpNtlmAdapter("username", "password")
+        self.assertIsNone(adapter.close())
+        mock_setup.assert_called_once_with("username", "password")
+        mock_teardown.assert_called_once()
+
+    @mock.patch("requests_ntlm2.connection.HTTPSConnection.set_ntlm_auth_credentials")
+    def test__setup(self, mock_set_ntlm_auth_credentials):
+        from requests.packages.urllib3.poolmanager import pool_classes_by_scheme
+        adapter = requests_ntlm2.adapters.HttpNtlmAdapter("username", "password")
+        mock_set_ntlm_auth_credentials.assert_called_once_with("username", "password")
+
+        http_conn_cls = pool_classes_by_scheme["http"].ConnectionCls
+        https_conn_cls = pool_classes_by_scheme["https"].ConnectionCls
+        self.assertTrue(http_conn_cls, requests_ntlm2.connection.HTTPConnection)
+        self.assertTrue(https_conn_cls, requests_ntlm2.connection.HTTPSConnection)
+        adapter.close()
+
+    @mock.patch("requests_ntlm2.connection.HTTPSConnection.clear_ntlm_auth_credentials")
+    @mock.patch("requests_ntlm2.connection.HTTPSConnection.set_ntlm_auth_credentials")
+    def test_close(self, set_ntlm_auth_credentials, clear_ntlm_auth_credentials):
+        from requests.packages.urllib3.poolmanager import pool_classes_by_scheme
+        adapter = requests_ntlm2.adapters.HttpNtlmAdapter("username2", "password")
+        set_ntlm_auth_credentials.assert_called_once_with("username2", "password")
+
+        http_conn_cls = pool_classes_by_scheme["http"].ConnectionCls
+        https_conn_cls = pool_classes_by_scheme["https"].ConnectionCls
+        self.assertTrue(http_conn_cls, requests_ntlm2.connection.HTTPConnection)
+        self.assertTrue(https_conn_cls, requests_ntlm2.connection.HTTPSConnection)
+
+        adapter.close()
+        clear_ntlm_auth_credentials.assert_called_once()
+        http_conn_cls = pool_classes_by_scheme["http"].ConnectionCls
+        https_conn_cls = pool_classes_by_scheme["https"].ConnectionCls
+        self.assertTrue(http_conn_cls, HTTPConnection)
+        self.assertTrue(https_conn_cls, HTTPSConnection)
+
