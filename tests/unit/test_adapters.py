@@ -108,4 +108,3 @@ class TestHttpNtlmAdapter(unittest.TestCase):
         https_conn_cls = pool_classes_by_scheme["https"].ConnectionCls
         self.assertTrue(http_conn_cls, HTTPConnection)
         self.assertTrue(https_conn_cls, HTTPSConnection)
-
