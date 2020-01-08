@@ -4,6 +4,7 @@
 [![codecov](https://codecov.io/gh/dopstar/requests-ntlm2/branch/master/graph/badge.svg)](https://codecov.io/gh/dopstar/requests-ntlm2)
 [![Python Version](https://img.shields.io/pypi/pyversions/requests-ntlm2.svg)](https://pypi.python.org/pypi/requests-ntlm2)
 [![PyPI Status](https://img.shields.io/pypi/v/requests-ntlm2.svg)](https://pypi.python.org/pypi/requests-ntlm2)
+[![Downloads](https://img.shields.io/pypi/dm/requests-ntlm2.svg)](https://pypi.python.org/pypi/requests-ntlm)
 [![Licence](https://img.shields.io/github/license/dopstar/requests-ntlm2.svg)](https://raw.githubusercontent.com/dopstar/requests-ntlm2/master/LICENSE)
 
 requests-ntlm2, which is based on [requests-ntlm](https://github.com/requests/requests-ntlm) , allows for HTTP NTLM authentication using the requests library.

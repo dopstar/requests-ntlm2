@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-version = "6.0.6"
+version = "6.0.7"
 url = "https://github.com/dopstar/requests-ntlm2"
 
 if "a" in version:
@@ -64,7 +64,6 @@ setup(
         "Natural Language :: English",
         "Programming Language :: Python",
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
