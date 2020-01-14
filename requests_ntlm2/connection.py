@@ -1,6 +1,6 @@
 import logging
-import socket
 import re
+import socket
 
 from requests.packages.urllib3.connection import DummyConnection
 from requests.packages.urllib3.connection import HTTPConnection as _HTTPConnection
@@ -23,15 +23,15 @@ _MAXLINE = 65536
 _ASSUMED_HTTP09_STATUS_LINE = "HTTP/0.9", 200, ""
 
 _TRACKED_HEADERS = (
-    'proxy-authenticate',
-    'proxy-support',
-    'cache-control',
-    'date',
-    'server',
-    'proxy-connection',
-    'connection',
-    'content-length',
-    'content-type',
+    "proxy-authenticate",
+    "proxy-support",
+    "cache-control",
+    "date",
+    "server",
+    "proxy-connection",
+    "connection",
+    "content-length",
+    "content-type",
 )
 
 
@@ -77,7 +77,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                 if line.lower().startswith(header):
                     logger.info("< %r", line)
         if status_line:
-            return status_line['version'], int(status_line['status']), status_line['message']
+            return status_line["version"], int(status_line["status"]), status_line["message"]
         return None
 
     def _get_response(self):

@@ -1,9 +1,6 @@
-import unittest
-
 import requests
 
 import requests_ntlm2
-from  requests_ntlm2 import HttpNtlmAdapter, HttpNtlmAuth
 
 
 """
@@ -53,27 +50,6 @@ class Test_Functional:
 
         assert actual_code == 200
         assert actual_content == expected
-
-
-class TestLocalNtlmProxy(unittest.TestCase):
-    def test_http_connect(self):
-        proxies = {
-            "http": "http://127.0.0.1:8080",
-            "https": "http:127.0.0.1:8080"
-        }
-        username = "testusser"
-        password = "Test123"
-        auth = HttpNtlmAuth(username, password)
-
-        session = requests.Session()
-        session.auth = auth
-        session.proxies = proxies
-        session.mount("http://", HttpNtlmAdapter(username, password))
-        session.mount("https://", HttpNtlmAdapter(username, password))
-
-        response = session.get("https://www.github.com:443", verify="proxy-ntlm-cert.crt")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.url, "bla", response.url)
 
 
 def send_request(url, username, password):
