@@ -42,18 +42,18 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
 
     def _get_header_bytes(self, proxy_auth_header=None):
         host, port = self._get_hostport(self._tunnel_host, self._tunnel_port)
-        http_connect_string = b"CONNECT {}:{} HTTP/1.0\r\n".format(host, port)
+        http_connect_string = "CONNECT {}:{} HTTP/1.0\r\n".format(host, port)
         header_bytes = http_connect_string
         if proxy_auth_header:
             self._tunnel_headers["Proxy-Authorization"] = proxy_auth_header
         self._tunnel_headers["Proxy-Connection"] = "Keep-Alive"
         self._tunnel_headers["Host"] = "{}:{}".format(host, port)
 
-        for header, value in self._tunnel_headers.items():
-            header_str = "%s: %s\r\n" % (header, value)
-            header_bytes += header_str.encode("latin-1")
-        header_bytes += b"\r\n"
-        return header_bytes
+        for header in sorted(self._tunnel_headers):
+            value = self._tunnel_headers[header]
+            header_bytes += "%s: %s\r\n" % (header, value)
+        header_bytes += "\r\n"
+        return header_bytes.encode("latin1")
 
     def _tunnel(self):
         username, password, domain = self._ntlm_credentials
