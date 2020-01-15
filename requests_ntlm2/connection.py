@@ -74,7 +74,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                 status_line = match.groupdict()
                 logger.debug("< %r", "{version} {status} {message}".format(**status_line))
             for header in _TRACKED_HEADERS:
-                if line.lower().startswith(header):
+                if line.lower().startswith("{}:".format(header)):
                     logger.info("< %r", line)
         if status_line:
             return status_line["version"], int(status_line["status"]), status_line["message"]
@@ -142,7 +142,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                     break
 
                 for header in _TRACKED_HEADERS:
-                    if line.lower().startswith(header):
+                    if line.lower().startswith("{}:".format(header)):
                         logger.info("< %r", line)
 
             header_bytes = self._get_header_bytes(proxy_auth_header=authenticate_hdr)
