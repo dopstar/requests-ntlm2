@@ -142,7 +142,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                     break
 
                 for header in _TRACKED_HEADERS:
-                    if line.lower().startswith("{}:".format(header)):
+                    if line.decode("utf-8").lower().startswith("{}:".format(header)):
                         logger.info("< %r", line)
 
             header_bytes = self._get_header_bytes(proxy_auth_header=authenticate_hdr)
@@ -161,7 +161,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
             if not line:
                 # for sites which EOF without sending trailer
                 break
-            if line == "\r\n":
+            if line == b"\r\n":
                 break
 
 

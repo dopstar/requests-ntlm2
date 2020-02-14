@@ -7,7 +7,7 @@ python:
 - '3.8'
 sudo: false
 install:
-- pip install -U pip setuptools
+- pip install -U pip setuptools wheel
 - pip install .[testing,linting]
 before_script:
 - python -m tests.test_server &
@@ -25,3 +25,4 @@ deploy:
   skip_existing: true
   password:
     secure: W3GvlzTBFxHr9Wjz7wvmogzge4raz4sEogclQtnLjAHuVtI6Ea9sKQHLhh0NoPeE3TfHpLEuDklEU5k7PkDC+5KrNNxfxWCJZvAx/T5h8ixQIjRo3FW8iYYlSSzcJxK7kAFxZkX/4PNec57q3TSwPoRnwBdOpkrJ9nCekegcw8zFeh4zSoJfydPLxSIwuaYDEDclrZHnip7yMMvXktBUvjjU8OrMaFwcAiLss7XbhRI/cnWcYwyH0xqx7l6WDzGDE5Ew7dCd1RvPsfMZCC2/8MYfKO/qvcCQcKxTdfEQDN8J7vN5Z2U+Nv8LkSz+48Qj4VGdDv3d0iMhHBuQoEh4Y2Oh3ZjQjo+jpgTwGvsHcSh8qaVYFarVP0TC8iltlVILLv69t63hIkq9iA/rE542Dn2vdYJYoP5hxF8gBOY8+YfzqbUf+8ruIV6MHmzoavDGAhi98IXiFjEU+dRGQ6iyzaEUlAcOYojKk4377r6fJgnU09qy/X1A5Sl/SWwYxYiCzGyIJIMJ5+bcH+jsiyu82xPngVMHM1CwYk/Ct9nIiVhYUmh4FFzY1vF/MBgJJUWkqtbOhhnlbwB1kWrvlaeQ3gRPVkvpfOpTRgVGmlRkd46PM0cTqUyYijSACSTyQqv1tWdlUvQFcaOotBu/jXSY0qZwj8jnWrGoCtu6sduH9hk=
+  distributions: "sdist bdist_wheel"
