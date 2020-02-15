@@ -6,6 +6,7 @@ import mock
 
 from requests_ntlm2.connection import VerifiedHTTPSConnection
 
+
 try:
     from StringIO import StringIO as BytesIO  # py2
 except ImportError:
