@@ -27,6 +27,7 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         self.conn._tunnel_headers = {}
 
     def tearDown(self):
+        self.conn.clear_ntlm_auth_credentials()
         self.conn.close()
 
     def test__get_header_bytes(self):
@@ -145,3 +146,33 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         mock_send.assert_called()
         self.assertEqual(mock_get_response.call_count, 2)
         self.assertEqual(mock_send.call_count, 2)
+
+    @mock.patch("requests.packages.urllib3.connection.VerifiedHTTPSConnection.response_class")
+    def test__get_response(self, mock_response_class):
+        mock_response_class.return_value._read_status.return_value = (1, 2, 3)
+        response = self.conn._get_response()
+        self.assertIsInstance(response, tuple)
+        self.assertEqual(len(response), 4)
+        self.assertEqual(response[:3], (1, 2, 3))
+
+    @mock.patch("requests.packages.urllib3.connection.VerifiedHTTPSConnection.response_class")
+    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection.handle_http09_response")
+    def test__get_response__http09(self, mock_handle_http09_response, mock_response_class):
+        mock_response_class.return_value._read_status.return_value = ("HTTP/0.9", 200, "")
+        mock_handle_http09_response.return_value = None
+        response = self.conn._get_response()
+        self.assertIsInstance(response, tuple)
+        self.assertEqual(len(response), 4)
+        self.assertEqual(response[:3], ("HTTP/0.9", 200, ""))
+        mock_handle_http09_response.assert_called_once()
+
+    @mock.patch("requests.packages.urllib3.connection.VerifiedHTTPSConnection.response_class")
+    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection.handle_http09_response")
+    def test__get_response__http09_status(self, mock_handle_http09_response, mock_response_class):
+        mock_response_class.return_value._read_status.return_value = ("HTTP/0.9", 200, "")
+        mock_handle_http09_response.return_value = (10, 20, 30)
+        response = self.conn._get_response()
+        self.assertIsInstance(response, tuple)
+        self.assertEqual(len(response), 4)
+        self.assertEqual(response[:3], (10, 20, 30))
+        mock_handle_http09_response.assert_called_once()
