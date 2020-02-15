@@ -5,18 +5,31 @@ from .core import get_auth_type_from_header, get_server_cert
 from .dance import HttpNtlmContext
 
 
+class NtlmCompatibility(object):
+    # see Microsoft doc on compatibility levels here: https://bit.ly/2OWZVxp
+    LM_AND_NTLMv1 = 0
+    LM_AND_NTLMv1_WITH_ESS = 1
+    NTLMv1_WITH_ESS = 2
+    NTLMv2_DEFAULT = 3
+    NTLMv2_LEVEL4 = 4
+    NTLMv2_LEVEL5 = 5
+
+
 class HttpNtlmAuth(AuthBase):
     """
     HTTP NTLM Authentication Handler for Requests.
     """
 
-    def __init__(self, username, password, send_cbt=True):
+    def __init__(
+        self, username, password, send_cbt=True, ntlm_compatibility=NtlmCompatibility.NTLMv2_DEFAULT
+    ):
         """Create an authentication handler for NTLM over HTTP.
 
         :param str username: Username in 'domain\\username' format
         :param str password: Password
         :param bool send_cbt: Will send the channel bindings over a
                               HTTPS channel (Default: True)
+        :param ntlm_compatibility: The Lan Manager Compatibility Level to use with the auth message
         """
         if ntlm is None:
             raise Exception("NTLM libraries unavailable")
@@ -32,6 +45,7 @@ class HttpNtlmAuth(AuthBase):
             self.domain = self.domain.upper()
         self.password = password
         self.send_cbt = send_cbt
+        self.ntlm_compatibility = ntlm_compatibility
 
         # This exposes the encrypt/decrypt methods used to encrypt and decrypt
         # messages sent after ntlm authentication. These methods are utilised
@@ -70,6 +84,7 @@ class HttpNtlmAuth(AuthBase):
             domain=self.domain,
             auth_type=auth_type,
             server_certificate_hash=server_certificate_hash,
+            ntlm_compatibility=self.ntlm_compatibility
         )
         request.headers[auth_header] = ntlm_context.get_negotiate_header()
 
