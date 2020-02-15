@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-version = "6.0.11"
+version = "6.0.12"
 url = "https://github.com/dopstar/requests-ntlm2"
 
 if "a" in version:
@@ -30,6 +30,7 @@ testing_requirements = [
     "codecov",
     "coverage",
     "mock",
+    "faker",
 ]
 
 linting_requirements = [
