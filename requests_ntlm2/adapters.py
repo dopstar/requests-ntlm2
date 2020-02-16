@@ -9,6 +9,7 @@ from requests.packages.urllib3.poolmanager import pool_classes_by_scheme
 
 from .connection import HTTPConnection as _HTTPConnection
 from .connection import HTTPSConnection as _HTTPSConnection
+from .core import NtlmCompatibility
 
 
 class HttpProxyAdapter(HTTPAdapter):
@@ -50,11 +51,18 @@ class HttpProxyAdapter(HTTPAdapter):
 
 
 class HttpNtlmAdapter(HttpProxyAdapter):
-    def __init__(self, ntlm_username, ntlm_password, *args, **kwargs):
+    def __init__(
+        self,
+        ntlm_username,
+        ntlm_password,
+        ntlm_compatibility=NtlmCompatibility.NTLMv2_DEFAULT,
+        *args,
+        **kwargs
+    ):
         """
         Thin wrapper around requests.adapters.HTTPAdapter
         """
-        self._setup(ntlm_username, ntlm_password)
+        self._setup(ntlm_username, ntlm_password, ntlm_compatibility)
         super(HttpNtlmAdapter, self).__init__(*args, **kwargs)
 
     def close(self):
@@ -62,10 +70,11 @@ class HttpNtlmAdapter(HttpProxyAdapter):
         super(HttpNtlmAdapter, self).close()
 
     @staticmethod
-    def _setup(username, password):
+    def _setup(username, password, ntlm_compatibility):
         pool_classes_by_scheme["http"].ConnectionCls = _HTTPConnection
         pool_classes_by_scheme["https"].ConnectionCls = _HTTPSConnection
         _HTTPSConnection.set_ntlm_auth_credentials(username, password)
+        _HTTPSConnection.ntlm_compatibility = ntlm_compatibility
 
     @staticmethod
     def _teardown():

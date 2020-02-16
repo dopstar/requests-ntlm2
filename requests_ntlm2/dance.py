@@ -3,6 +3,8 @@ import logging
 
 import ntlm_auth.ntlm
 
+from .core import NtlmCompatibility
+
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +19,7 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
         domain=None,
         workstation=None,
         cbt_data=None,
-        ntlm_compatibility=3,
+        ntlm_compatibility=NtlmCompatibility.NTLMv2_DEFAULT,
         auth_type=None,
         server_certificate_hash=None,
     ):

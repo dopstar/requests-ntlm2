@@ -1,18 +1,8 @@
 from ntlm_auth import ntlm
 from requests.auth import AuthBase
 
-from .core import get_auth_type_from_header, get_server_cert
+from .core import NtlmCompatibility, get_auth_type_from_header, get_server_cert
 from .dance import HttpNtlmContext
-
-
-class NtlmCompatibility(object):
-    # see Microsoft doc on compatibility levels here: https://bit.ly/2OWZVxp
-    LM_AND_NTLMv1 = 0
-    LM_AND_NTLMv1_WITH_ESS = 1
-    NTLMv1_WITH_ESS = 2
-    NTLMv2_DEFAULT = 3
-    NTLMv2_LEVEL4 = 4
-    NTLMv2_LEVEL5 = 5
 
 
 class HttpNtlmAuth(AuthBase):

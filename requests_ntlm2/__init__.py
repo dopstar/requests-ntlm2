@@ -1,6 +1,7 @@
 from .adapters import HttpNtlmAdapter, HttpProxyAdapter
 from .connection import HTTPConnection, HTTPSConnection, VerifiedHTTPSConnection
-from .requests_ntlm2 import HttpNtlmAuth, NtlmCompatibility
+from .core import NtlmCompatibility
+from .requests_ntlm2 import HttpNtlmAuth
 
 
 __all__ = (
