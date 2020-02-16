@@ -9,6 +9,12 @@
 
 requests-ntlm2, which is based on [requests-ntlm](https://github.com/requests/requests-ntlm) , allows for HTTP NTLM authentication using the requests library.
 
+## Installation
+
+```shell
+pip install requests-ntlm2
+```
+
 ## Usage
 
 ### Basic Usage
@@ -19,6 +25,24 @@ import requests
 from requests_ntlm2 import HttpNtlmAuth
 
 auth=HttpNtlmAuth('domain\\username','password')
+requests.get("http://ntlm_protected_site.com", auth=auth)
+```
+___
+
+### Changing NTLM compatibility level
+See this [MS doc](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-2000-server/cc960646%28v=technet.10%29) on LM compatibility levels. `requests_ntlm2` defaults to
+compatibility level 3 which supports NTLMv2 [only]. You can change the compatibility level as follows:
+
+
+```python
+import requests
+from requests_ntlm2 import HttpNtlmAuth, NtlmCompatibility
+
+username = 'domain\\username'
+password = 'password123'
+ntlm_compatibility = NtlmCompatibility.LM_AND_NTLMv1_WITH_ESS  # => level 1
+auth=HttpNtlmAuth(username, password, ntlm_compatibility=ntlm_compatibility)
+
 requests.get("http://ntlm_protected_site.com", auth=auth)
 ```
 ___
@@ -39,7 +63,7 @@ session.get('http://ntlm_protected_site.com')
 ```
 ___
 
-### HTTPS CONNECT Usage
+### HTTP CONNECT Usage
 When using `requests-ntlm2` to create SSL proxy tunnel via HTTPS CONNECT, the so-called "NTLM Dance" - ie, 
 the NTLM authentication handshake - has to be done at the lower level (at `httplib` level) at tunnel-creation 
 step. This means that you should use the `HttpNtlmAdapter` and requests session. This `HttpNtlmAdapter` 
@@ -70,12 +94,6 @@ session.auth = HttpNtlmAuth(username, password)
 session.proxies = proxies
 
 response = session.get(url)
-```
-
-## Installation
-
-```shell
-pip install requests-ntlm2
 ```
 
 ## Requirements
