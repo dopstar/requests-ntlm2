@@ -64,16 +64,22 @@ session.get('http://ntlm_protected_site.com')
 ___
 
 ### HTTP CONNECT Usage
-When using `requests-ntlm2` to create SSL proxy tunnel via HTTPS CONNECT, the so-called "NTLM Dance" - ie, 
-the NTLM authentication handshake - has to be done at the lower level (at `httplib` level) at tunnel-creation 
-step. This means that you should use the `HttpNtlmAdapter` and requests session. This `HttpNtlmAdapter` 
-is responsible for sending proxy auth information downstream. 
+When using `requests-ntlm2` to create SSL proxy tunnel via
+[HTTP CONNECT](https://en.wikipedia.org/wiki/HTTP_tunnel#HTTP_CONNECT_method), the so-called
+"NTLM Dance" - ie, the NTLM authentication handshake - has to be done at the lower level
+(at `httplib` level) at tunnel-creation step. This means that you should use the `HttpNtlmAdapter`
+and requests session. This `HttpNtlmAdapter` is responsible for sending proxy auth information
+downstream. 
 
 Here is a basic example:
 
 ```python
 import requests
-from requests_ntlm2 import HttpNtlmAuth, HttpNtlmAdapter
+from requests_ntlm2 import (
+    HttpNtlmAuth,
+    HttpNtlmAdapter,
+    NtlmCompatibility
+)
 
 username = '...'
 password = '...'
@@ -85,15 +91,33 @@ proxies = {
     'https': 'http://{}:{}'.format(proxy_ip, proxy_port)
 }
 
-url = 'http:/foobar.com'
+ntlm_compatibility = NtlmCompatibility.NTLMv2_DEFAULT
 
 session = requests.Session()
-session.mount('https://', HttpNtlmAdapter(username, password))
-session.mount('http://', HttpNtlmAdapter(username, password))
-session.auth = HttpNtlmAuth(username, password)
+session.mount(
+    'https://',
+    HttpNtlmAdapter(
+        username,
+        password,
+        ntlm_compatibility=ntlm_compatibility
+    )
+)
+session.mount(
+    'http://',
+    HttpNtlmAdapter(
+        username,
+        password,
+        ntlm_compatibility=ntlm_compatibility
+    )
+)
+session.auth = HttpNtlmAuth(
+    username,
+    password,
+    ntlm_compatibility=ntlm_compatibility
+)
 session.proxies = proxies
 
-response = session.get(url)
+response = session.get('http:/foobar.com')
 ```
 
 ## Requirements

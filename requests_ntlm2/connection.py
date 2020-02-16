@@ -11,7 +11,7 @@ from requests.packages.urllib3.packages.six.moves.http_client import (
     LineTooLong
 )
 
-from .core import get_ntlm_credentials
+from .core import NtlmCompatibility, get_ntlm_credentials
 from .dance import HttpNtlmContext
 
 
@@ -20,7 +20,10 @@ logger = logging.getLogger(__name__)
 # maximal line length when calling readline().
 _MAXLINE = 65536
 
-_ASSUMED_HTTP09_STATUS_LINE = "HTTP/0.9", 200, ""
+_ASSUMED_HTTP09_STATUS_LINES = (
+    ("HTTP/0.9", 200, ""),
+    ("HTTP/0.9", 200, "OK"),
+)
 
 _TRACKED_HEADERS = (
     "proxy-authenticate",
@@ -44,9 +47,13 @@ class HTTPSConnection(_HTTPSConnection):
 
 
 class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
+    ntlm_compatibility = NtlmCompatibility.NTLMv2_DEFAULT
+
     def __init__(self, *args, **kwargs):
         super(VerifiedHTTPSConnection, self).__init__(*args, **kwargs)
         self.__continue_reading_headers = True
+        if self.ntlm_compatibility is None:
+            self.ntlm_compatibility = NtlmCompatibility.NTLMv2_DEFAULT
 
     @classmethod
     def set_ntlm_auth_credentials(cls, username, password):
@@ -83,7 +90,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
     def _get_response(self):
         response = self.response_class(self.sock, method=self._method)
         version, code, message = response._read_status()
-        if (version, code, message) == _ASSUMED_HTTP09_STATUS_LINE:
+        if (version, code, message) in _ASSUMED_HTTP09_STATUS_LINES:
             status_line = self.handle_http09_response(response)
             if status_line:
                 version, code, message = status_line
@@ -113,7 +120,11 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         username, password, domain = self._ntlm_credentials
 
         ntlm_context = HttpNtlmContext(
-            username, password, domain=domain, auth_type="NTLM"
+            username,
+            password,
+            domain=domain,
+            auth_type="NTLM",
+            ntlm_compatibility=self.ntlm_compatibility
         )
 
         negotiate_header = ntlm_context.get_negotiate_header()
