@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-version = "6.1.1"
+version = "6.1.2"
 url = "https://github.com/dopstar/requests-ntlm2"
 
 if "a" in version:
@@ -59,6 +59,7 @@ setup(
     long_description_content_type="text/markdown",
     license="ISC",
     keywords=["NTLM", "requests", "proxy", "authorization", "NTLM dance"],
+    package_dir={"requests_ntlm2": "requests_ntlm2"},
     classifiers=[
         "Development Status :: {0}".format(dev_status),
         "Intended Audience :: Developers",
