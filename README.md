@@ -6,8 +6,9 @@
 [![PyPI Status](https://img.shields.io/pypi/v/requests-ntlm2.svg)](https://pypi.python.org/pypi/requests-ntlm2)
 [![Downloads](https://img.shields.io/pypi/dm/requests-ntlm2.svg)](https://pypi.python.org/pypi/requests-ntlm2)
 [![Licence](https://img.shields.io/github/license/dopstar/requests-ntlm2.svg)](https://raw.githubusercontent.com/dopstar/requests-ntlm2/master/LICENSE)
+[![Code Style: Black](https://img.shields.io/badge/code%20style-black-101010.svg)](https://github.com/psf/black)
 
-requests-ntlm2, which is based on [requests-ntlm](https://github.com/requests/requests-ntlm) , allows for HTTP NTLM authentication using the requests library.
+requests-ntlm2, which is based on [requests-ntlm](https://github.com/requests/requests-ntlm), allows for HTTP NTLM authentication using the requests library.
 
 ## Installation
 
