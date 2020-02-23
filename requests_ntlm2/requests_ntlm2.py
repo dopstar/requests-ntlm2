@@ -1,7 +1,7 @@
 from ntlm_auth import ntlm
 from requests.auth import AuthBase
 
-from .core import NtlmCompatibility, get_auth_type_from_header, get_cbt_data
+from .core import NtlmCompatibility, get_auth_type_from_header, get_cbt_data, get_ntlm_credentials
 from .dance import HttpNtlmContext
 
 
@@ -24,12 +24,7 @@ class HttpNtlmAuth(AuthBase):
         if ntlm is None:
             raise Exception("NTLM libraries unavailable")
 
-        # parse the username
-        try:
-            self.domain, self.username = username.split("\\", 1)
-        except ValueError:
-            self.username = username
-            self.domain = ""
+        self.username, self.password, self.domain = get_ntlm_credentials(username, password)
 
         if self.domain:
             self.domain = self.domain.upper()

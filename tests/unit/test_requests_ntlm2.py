@@ -2,6 +2,8 @@ import base64
 import unittest
 import warnings
 
+import faker
+import mock
 import requests
 
 import requests_ntlm2
@@ -15,6 +17,124 @@ class TestRequestsNtlm(unittest.TestCase):
         self.test_server_username = "%s\\%s" % (domain, username)
         self.test_server_password = password
         self.auth_types = ["ntlm", "negotiate", "both"]
+
+    def test__init(self):
+        auth = requests_ntlm2.HttpNtlmAuth(self.test_server_username, self.test_server_password)
+        self.assertIsInstance(auth, requests_ntlm2.HttpNtlmAuth)
+        self.assertEqual(auth.username, username)
+        self.assertEqual(auth.password, password)
+        self.assertEqual(auth.domain, domain.upper())
+        self.assertTrue(auth.send_cbt)
+        self.assertEqual(
+            auth.ntlm_compatibility,
+            requests_ntlm2.core.NtlmCompatibility.NTLMv2_DEFAULT
+        )
+
+    def test_extract_username_and_password(self):
+        auth = requests_ntlm2.HttpNtlmAuth(self.test_server_username, self.test_server_password)
+        self.assertEqual(
+            auth.extract_username_and_password(),
+            ("{}\\{}".format(domain.upper(), username), password)
+        )
+
+        fake = faker.Factory.create()
+        username2 = fake.user_name()
+        password2 = fake.password()
+        auth = requests_ntlm2.HttpNtlmAuth(username2, password2)
+        self.assertEqual(auth.extract_username_and_password(), (username2, password2))
+
+    @mock.patch("requests_ntlm2.HttpNtlmAuth.retry_using_http_ntlm_auth")
+    def test_response_hook__http_200(self, mock_retry_using_http_ntlm_auth):
+        auth = requests_ntlm2.HttpNtlmAuth(self.test_server_username, self.test_server_password)
+        response = requests.Response()
+        response.status_code = 200
+        new_response = auth.response_hook(response)
+        mock_retry_using_http_ntlm_auth.assert_not_called()
+        self.assertTrue(new_response is response)
+
+    @mock.patch("requests_ntlm2.HttpNtlmAuth.retry_using_http_ntlm_auth")
+    def test_response_hook__http_401_basic_auth_header(self, mock_retry_using_http_ntlm_auth):
+        auth = requests_ntlm2.HttpNtlmAuth(self.test_server_username, self.test_server_password)
+        response = requests.Response()
+        response.status_code = 401
+        response.headers["WWW-Authenticate"] = "Basic"
+        new_response = auth.response_hook(response)
+        mock_retry_using_http_ntlm_auth.assert_not_called()
+        self.assertTrue(new_response is response)
+
+    @mock.patch("requests_ntlm2.HttpNtlmAuth.retry_using_http_ntlm_auth")
+    def test_response_hook__http_401_ntlm_auth_header(self, mock_retry_using_http_ntlm_auth):
+        auth = requests_ntlm2.HttpNtlmAuth(self.test_server_username, self.test_server_password)
+        response = requests.Response()
+        response.status_code = 401
+        response.headers["WWW-Authenticate"] = "NTLM"
+        new_response = auth.response_hook(response)
+        mock_retry_using_http_ntlm_auth.assert_called_once_with(
+            "www-authenticate",
+            "Authorization",
+            response,
+            "NTLM",
+            {}
+        )
+        self.assertTrue(new_response is not response)
+
+    @mock.patch("requests_ntlm2.HttpNtlmAuth.retry_using_http_ntlm_auth")
+    def test_response_hook__http_401_negotiate_auth_header(self, mock_retry_using_http_ntlm_auth):
+        auth = requests_ntlm2.HttpNtlmAuth(self.test_server_username, self.test_server_password)
+        response = requests.Response()
+        response.status_code = 401
+        response.headers["WWW-Authenticate"] = "Negotiate"
+        new_response = auth.response_hook(response)
+        mock_retry_using_http_ntlm_auth.assert_called_once_with(
+            "www-authenticate",
+            "Authorization",
+            response,
+            "Negotiate",
+            {}
+        )
+        self.assertTrue(new_response is not response)
+
+    @mock.patch("requests_ntlm2.HttpNtlmAuth.retry_using_http_ntlm_auth")
+    def test_response_hook__http_407_basic_auth_header(self, mock_retry_using_http_ntlm_auth):
+        auth = requests_ntlm2.HttpNtlmAuth(self.test_server_username, self.test_server_password)
+        response = requests.Response()
+        response.status_code = 407
+        response.headers["Proxy-Authenticate"] = "Basic"
+        new_response = auth.response_hook(response)
+        mock_retry_using_http_ntlm_auth.assert_not_called()
+        self.assertTrue(new_response is response)
+
+    @mock.patch("requests_ntlm2.HttpNtlmAuth.retry_using_http_ntlm_auth")
+    def test_response_hook__http_407_ntlm_auth_header(self, mock_retry_using_http_ntlm_auth):
+        auth = requests_ntlm2.HttpNtlmAuth(self.test_server_username, self.test_server_password)
+        response = requests.Response()
+        response.status_code = 407
+        response.headers["Proxy-Authenticate"] = "NTLM"
+        new_response = auth.response_hook(response)
+        mock_retry_using_http_ntlm_auth.assert_called_once_with(
+            "proxy-authenticate",
+            "Proxy-Authorization",
+            response,
+            "NTLM",
+            {}
+        )
+        self.assertTrue(new_response is not response)
+
+    @mock.patch("requests_ntlm2.HttpNtlmAuth.retry_using_http_ntlm_auth")
+    def test_response_hook__http_407_negotiate_auth_header(self, mock_retry_using_http_ntlm_auth):
+        auth = requests_ntlm2.HttpNtlmAuth(self.test_server_username, self.test_server_password)
+        response = requests.Response()
+        response.status_code = 407
+        response.headers["Proxy-Authenticate"] = "Negotiate"
+        new_response = auth.response_hook(response)
+        mock_retry_using_http_ntlm_auth.assert_called_once_with(
+            "proxy-authenticate",
+            "Proxy-Authorization",
+            response,
+            "Negotiate",
+            {}
+        )
+        self.assertTrue(new_response is not response)
 
     def test_requests_ntlm(self):
         for auth_type in self.auth_types:
