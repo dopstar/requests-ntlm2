@@ -90,10 +90,14 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
     def _get_response(self):
         response = self.response_class(self.sock, method=self._method)
         version, code, message = response._read_status()
+
         if (version, code, message) in _ASSUMED_HTTP09_STATUS_LINES:
+            logger.warning("server response used outdated HTTP version: HTTP/0.9")
             status_line = self.handle_http09_response(response)
             if status_line:
+                old_status_line = version, code, message
                 version, code, message = status_line
+                logger.info("changed status line from %s, to %s", old_status_line, status_line)
         else:
             logger.debug("< %r", "{} {} {}".format(version, code, message))
         return version, code, message, response
@@ -118,6 +122,8 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
 
     def _tunnel(self):
         username, password, domain = self._ntlm_credentials
+        logger.debug("attempting to open tunnel using HTTP CONNECT")
+        logger.debug("username: %s, domain: %s", username, domain)
 
         ntlm_context = HttpNtlmContext(
             username,

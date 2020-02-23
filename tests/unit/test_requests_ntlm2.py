@@ -117,10 +117,10 @@ class TestCertificateHash(unittest.TestCase):
             b"IFKSb6runxF1MAik+GCSA=="
         )
 
-        expected_hash = (
-            "2334B8476CBF4E6DFC766A5D5A30D6649C01BAE1662A5C3A130" "2A968D7C6B0F6"
+        expected_hash = base64.b16decode(
+            "2334B8476CBF4E6DFC766A5D5A30D6649C01BAE1662A5C3A1302A968D7C6B0F6"
         )
-        actual_hash = requests_ntlm2.core.get_certificate_hash(
+        actual_hash = requests_ntlm2.core.get_certificate_hash_bytes(
             base64.b64decode(cert_der)
         )
         assert actual_hash == expected_hash
@@ -149,10 +149,10 @@ class TestCertificateHash(unittest.TestCase):
             b"TDdI11kPLq4EiwxvPanCg=="
         )
 
-        expected_hash = (
-            "14CFE8E4B332B20A343FC840B18F9F6F78926AFE7EC3E7B8E28" "969619B1E8F3E"
+        expected_hash = base64.b16decode(
+            "14CFE8E4B332B20A343FC840B18F9F6F78926AFE7EC3E7B8E28969619B1E8F3E"
         )
-        actual_hash = requests_ntlm2.core.get_certificate_hash(
+        actual_hash = requests_ntlm2.core.get_certificate_hash_bytes(
             base64.b64decode(cert_der)
         )
         assert actual_hash == expected_hash
@@ -181,10 +181,10 @@ class TestCertificateHash(unittest.TestCase):
             b"xSDYjHQAaFMcfdUpa9GGQ=="
         )
 
-        expected_hash = (
-            "996F3EEA812C1870E30549FF9B86CD87A890B6D8DFDF4A81BEF" "9675970DADB26"
+        expected_hash = base64.b16decode(
+            "996F3EEA812C1870E30549FF9B86CD87A890B6D8DFDF4A81BEF9675970DADB26"
         )
-        actual_hash = requests_ntlm2.core.get_certificate_hash(
+        actual_hash = requests_ntlm2.core.get_certificate_hash_bytes(
             base64.b64decode(cert_der)
         )
         assert actual_hash == expected_hash
@@ -213,11 +213,11 @@ class TestCertificateHash(unittest.TestCase):
             b"2Q0W+3nVwSxIr6bd6hw7g=="
         )
 
-        expected_hash = (
+        expected_hash = base64.b16decode(
             "34F303C995286F4B214A9BA6435B69B51ECF3758EABC2A14D7A"
             "43FD237DC2B1A1AD9111C5C965E107507CB4198C09FEC"
         )
-        actual_hash = requests_ntlm2.core.get_certificate_hash(
+        actual_hash = requests_ntlm2.core.get_certificate_hash_bytes(
             base64.b64decode(cert_der)
         )
         assert actual_hash == expected_hash
@@ -246,12 +246,11 @@ class TestCertificateHash(unittest.TestCase):
             b"OI7elR0nJ0peai30eMpQQ=="
         )
 
-        expected_hash = (
-            "556E1C1784E3B957370B7F544F62C533CB2CA5C1DAE0706FAEF"
-            "00544E1AD2B76FF25CFBE69B1C4E630C3BB0207DF11314C6738"
-            "BCAED7E071D7BFBF2C9DFAB85D"
+        expected_hash = base64.b16decode(
+            "556E1C1784E3B957370B7F544F62C533CB2CA5C1DAE0706FAEF00544E1AD2B76"
+            "FF25CFBE69B1C4E630C3BB0207DF11314C6738BCAED7E071D7BFBF2C9DFAB85D"
         )
-        actual_hash = requests_ntlm2.core.get_certificate_hash(
+        actual_hash = requests_ntlm2.core.get_certificate_hash_bytes(
             base64.b64decode(cert_der)
         )
         assert actual_hash == expected_hash
@@ -270,10 +269,10 @@ class TestCertificateHash(unittest.TestCase):
             b"gGQuaPWg6aCWV+2+6pNCNMdg/Nix+mMOJ88qCBNHi"
         )
 
-        expected_hash = (
-            "1EC9AD46DEE9340E4503CFFDB5CD810CB26B778F46BE95D5EAF" "999DCB1C45EDA"
+        expected_hash = base64.b16decode(
+            "1EC9AD46DEE9340E4503CFFDB5CD810CB26B778F46BE95D5EAF999DCB1C45EDA"
         )
-        actual_hash = requests_ntlm2.core.get_certificate_hash(
+        actual_hash = requests_ntlm2.core.get_certificate_hash_bytes(
             base64.b64decode(cert_der)
         )
         assert actual_hash == expected_hash
@@ -292,10 +291,10 @@ class TestCertificateHash(unittest.TestCase):
             b"w2s6bJoI+D7Xaey0Hp0gkks9z55y976keIEI+n3qkzw=="
         )
 
-        expected_hash = (
-            "FECF1B2585449990D9E3B2C92D3F597EC8354E124EDA751D948" "37C2C89A2C155"
+        expected_hash = base64.b16decode(
+            "FECF1B2585449990D9E3B2C92D3F597EC8354E124EDA751D94837C2C89A2C155"
         )
-        actual_hash = requests_ntlm2.core.get_certificate_hash(
+        actual_hash = requests_ntlm2.core.get_certificate_hash_bytes(
             base64.b64decode(cert_der)
         )
         assert actual_hash == expected_hash
@@ -314,11 +313,11 @@ class TestCertificateHash(unittest.TestCase):
             b"D4iNReh1afXKYC0ipjXWAIkiihnEEycCIQMbkMNst7A=="
         )
 
-        expected_hash = (
+        expected_hash = base64.b16decode(
             "D2987AD8F20E8316A831261B74EF7B3E55155D0922E07FFE546"
             "20806982B68A73A5E3C478BAA5E7714135CB26D980749"
         )
-        actual_hash = requests_ntlm2.core.get_certificate_hash(
+        actual_hash = requests_ntlm2.core.get_certificate_hash_bytes(
             base64.b64decode(cert_der)
         )
         assert actual_hash == expected_hash
@@ -337,12 +336,11 @@ class TestCertificateHash(unittest.TestCase):
             b"D35JvzmqU05kSFV5eTvkhkaDObd7V55vokhm31+Li"
         )
 
-        expected_hash = (
-            "E5CB68B2F843D63BF40BCB2007608F8197618392783F2330E5E"
-            "F19A5BD8F0B2FAAC861855FBB63A221CC46FC1E226A072411AF"
-            "175DDE479281E006878B348059"
+        expected_hash = base64.b16decode(
+            "E5CB68B2F843D63BF40BCB2007608F8197618392783F2330E5EF19A5BD8F0B2FA"
+            "AC861855FBB63A221CC46FC1E226A072411AF175DDE479281E006878B348059"
         )
-        actual_hash = requests_ntlm2.core.get_certificate_hash(
+        actual_hash = requests_ntlm2.core.get_certificate_hash_bytes(
             base64.b64decode(cert_der)
         )
         assert actual_hash == expected_hash
@@ -371,7 +369,7 @@ class TestCertificateHash(unittest.TestCase):
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            actual_hash = requests_ntlm2.core.get_certificate_hash(
+            actual_hash = requests_ntlm2.core.get_certificate_hash_bytes(
                 base64.b64decode(cert_der)
             )
             assert actual_hash == expected_hash

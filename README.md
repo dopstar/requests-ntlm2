@@ -1,4 +1,6 @@
-# requests-ntlm2
+<h1 align="center">requests-ntlm2</h1>
+<div align="center">NTLM authentication plugin for Requests</div>
+<br />
 
 [![Build Status](https://travis-ci.org/dopstar/requests-ntlm2.svg?branch=master)](https://travis-ci.org/dopstar/requests-ntlm2)
 [![codecov](https://codecov.io/gh/dopstar/requests-ntlm2/branch/master/graph/badge.svg)](https://codecov.io/gh/dopstar/requests-ntlm2)
