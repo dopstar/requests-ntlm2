@@ -21,7 +21,6 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
         cbt_data=None,
         ntlm_compatibility=NtlmCompatibility.NTLMv2_DEFAULT,
         auth_type=None,
-        server_certificate_hash=None,
     ):
         r"""
         Initialises a NTLM context to use when authenticating using the NTLM
@@ -37,7 +36,7 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
         :param domain: The domain part of the username (None if n/a)
         :param workstation: The localworkstation (None if n/a)
         :param cbt_data: A GssChannelBindingsStruct or None to bind channel
-            data with the auth process
+            data with the auth process. See: https://tools.ietf.org/html/rfc5929
         :param ntlm_compatibility: (Default 3)
             The Lan Manager Compatibility Level to use with the auth message
             This is set by an Administrator in the registry key
@@ -49,7 +48,6 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
                 3-5 : NTLMv2 Only
             Note: Values 3 to 5 are no different from a client perspective
         :param auth_type: either 'NTLM' or 'Negotiate'
-        :param server_certificate_hash: the hash of the certificate from peer
         """
         if auth_type not in ("NTLM", "Negotiate"):
             raise ValueError(
@@ -57,7 +55,6 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
             )
         self._auth_type = auth_type
         self._challenge_token = None
-        self._server_certificate_hash = server_certificate_hash
         super(HttpNtlmContext, self).__init__(
             username,
             password,

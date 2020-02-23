@@ -1,7 +1,7 @@
 from ntlm_auth import ntlm
 from requests.auth import AuthBase
 
-from .core import NtlmCompatibility, get_auth_type_from_header, get_server_cert
+from .core import NtlmCompatibility, get_auth_type_from_header, get_cbt_data
 from .dance import HttpNtlmContext
 
 
@@ -47,7 +47,9 @@ class HttpNtlmAuth(AuthBase):
         self, auth_header_field, auth_header, response, auth_type, args
     ):
         # Get the certificate of the server if using HTTPS for CBT
-        server_certificate_hash = get_server_cert(response, send_cbt=self.send_cbt)
+        cbt_data = None
+        if self.send_cbt:
+            cbt_data = get_cbt_data(response)
 
         # Attempt to authenticate using HTTP NTLM challenge/response
         if auth_header in response.request.headers:
@@ -73,7 +75,7 @@ class HttpNtlmAuth(AuthBase):
             self.password,
             domain=self.domain,
             auth_type=auth_type,
-            server_certificate_hash=server_certificate_hash,
+            cbt_data=cbt_data,
             ntlm_compatibility=self.ntlm_compatibility
         )
         request.headers[auth_header] = ntlm_context.get_negotiate_header()
@@ -123,7 +125,7 @@ class HttpNtlmAuth(AuthBase):
         """The actual hook handler."""
         if r.status_code == 401:
             # Handle server auth.
-            www_authenticate = r.headers.get("www-authenticate", "").lower()
+            www_authenticate = r.headers.get("www-authenticate", "")
             auth_type = get_auth_type_from_header(www_authenticate)
 
             if auth_type is not None:
@@ -132,7 +134,7 @@ class HttpNtlmAuth(AuthBase):
                 )
         elif r.status_code == 407:
             # If we didn't have server auth, do proxy auth.
-            proxy_authenticate = r.headers.get("proxy-authenticate", "").lower()
+            proxy_authenticate = r.headers.get("proxy-authenticate", "")
             auth_type = get_auth_type_from_header(proxy_authenticate)
             if auth_type is not None:
                 return self.retry_using_http_ntlm_auth(
