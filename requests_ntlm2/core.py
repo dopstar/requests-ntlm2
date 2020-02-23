@@ -132,10 +132,10 @@ def get_cbt_data(response):
         logger.debug("server cert not found, channel binding tokens (CBT) wont be used")
         return None
 
-    channel_binding_type = "tls-server-end-point"  # https://tools.ietf.org/html/rfc5929#section-4
+    channel_binding_type = b"tls-server-end-point"  # https://tools.ietf.org/html/rfc5929#section-4
     data_type = GssChannelBindingsStruct.APPLICATION_DATA
 
     cbt_data = GssChannelBindingsStruct()
-    cbt_data[data_type] = "{}:".format(channel_binding_type).encode("utf8") + cert_hash_bytes
+    cbt_data[data_type] = b":".join([channel_binding_type, cert_hash_bytes])
     logger.debug("cbt data: %s", cbt_data.get_data())
     return cbt_data
