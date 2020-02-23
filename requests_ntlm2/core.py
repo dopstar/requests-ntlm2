@@ -99,9 +99,9 @@ def get_auth_type_from_header(header):
     authentication type to use. We prefer NTLM over Negotiate if the server
     suppports it.
     """
-    if "ntlm" in header:
+    if "ntlm" in header.lower():
         return "NTLM"
-    elif "negotiate" in header:
+    elif "negotiate" in header.lower():
         return "Negotiate"
     return None
 
