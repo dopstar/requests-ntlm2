@@ -98,6 +98,11 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                 old_status_line = version, code, message
                 version, code, message = status_line
                 logger.info("changed status line from %s, to %s", old_status_line, status_line)
+            else:
+                logger.warning("could not handle HTTP/0.9 server response")
+                logger.debug("HTTP/0.9: version=%s", version)
+                logger.debug("HTTP/0.9: code=%s", code)
+                logger.debug("HTTP/0.9: message=%s", message)
         else:
             logger.debug("< %r", "{} {} {}".format(version, code, message))
         return version, code, message, response
