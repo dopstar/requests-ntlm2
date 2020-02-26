@@ -51,7 +51,7 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
         """
         if auth_type not in ("NTLM", "Negotiate"):
             raise ValueError(
-                'Expected "NTLM" or "Negotiate" auth_type, got %s'.format(auth_type)
+                'Expected "NTLM" or "Negotiate" auth_type, got {}'.format(auth_type)
             )
         self._auth_type = auth_type
         self._challenge_token = None
