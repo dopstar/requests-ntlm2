@@ -70,7 +70,6 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
             re.DOTALL
         )
 
-        status_line = None
         while True:
             line = response.fp.readline()
             if not line:
@@ -80,11 +79,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
             if match:
                 status_line = match.groupdict()
                 logger.debug("< %r", "{version} {status} {message}".format(**status_line))
-            for header in _TRACKED_HEADERS:
-                if line.lower().startswith("{}:".format(header)):
-                    logger.info("< %r", line)
-        if status_line:
-            return status_line["version"], int(status_line["status"]), status_line["message"]
+                return status_line["version"], int(status_line["status"]), status_line["message"]
         return None
 
     def _get_response(self):
