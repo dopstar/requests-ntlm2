@@ -69,13 +69,13 @@ class TestCoreFunctions(unittest.TestCase):
         self.assertIsNone(auth_type)
 
     def test_get_server_cert(self):
-        raw_response = type('RawResponse', (), {'raw': HTTPResponse()})
+        raw_response = type("RawResponse", (), {"raw": HTTPResponse()})
         response = requests_ntlm2.core.get_server_cert(raw_response)
         self.assertIsNone(response)
 
-    @mock.patch('logging.Logger.warning')
+    @mock.patch("logging.Logger.warning")
     def test_get_server_cert__non_urllib3_backend(self, mock_logger_warning):
-        raw_response = type('RawResponse', (), {'raw': None})
+        raw_response = type("RawResponse", (), {"raw": None})
         response = requests_ntlm2.core.get_server_cert(raw_response)
         self.assertIsNone(response)
         mock_logger_warning.assert_called_once_with(
@@ -83,11 +83,11 @@ class TestCoreFunctions(unittest.TestCase):
             "cannot retrieve server certificate for CBT"
         )
 
-    @mock.patch('requests_ntlm2.core.get_certificate_hash_bytes')
+    @mock.patch("requests_ntlm2.core.get_certificate_hash_bytes")
     def test_get_server_cert__with_sock(self, mock_get_certificate_hash_bytes):
         raw = HTTPResponse()
         raw._fp = mock.MagicMock()
-        raw_response = type('RawResponse', (), {'raw': raw})
+        raw_response = type("RawResponse", (), {"raw": raw})
         response = requests_ntlm2.core.get_server_cert(raw_response)
         self.assertIsNotNone(response)
         mock_get_certificate_hash_bytes.assert_called_once()
