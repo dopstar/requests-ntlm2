@@ -11,7 +11,7 @@ import requests_ntlm2.core
 from tests.test_utils import domain, password, username
 
 
-class TestRequestsNtlm(unittest.TestCase):
+class TestHttpNtlmAuth(unittest.TestCase):
     def setUp(self):
         self.test_server_url = "http://localhost:5000/"
         self.test_server_username = "%s\\%s" % (domain, username)
@@ -29,6 +29,14 @@ class TestRequestsNtlm(unittest.TestCase):
             auth.ntlm_compatibility,
             requests_ntlm2.core.NtlmCompatibility.NTLMv2_DEFAULT
         )
+
+    def test__init__no_auth(self):
+        ntlm = requests_ntlm2.ntlm
+        requests_ntlm2.ntlm = None
+        with self.assertRaisesRegexp(ImportError, "hay"):
+            requests_ntlm2.HttpNtlmAuth(self.test_server_username, self.test_server_password)
+        requests_ntlm2.ntlm = ntlm
+
 
     def test_extract_username_and_password(self):
         auth = requests_ntlm2.HttpNtlmAuth(self.test_server_username, self.test_server_password)
