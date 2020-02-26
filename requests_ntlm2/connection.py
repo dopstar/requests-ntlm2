@@ -73,7 +73,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         status_line = None
         while True:
             line = response.fp.readline()
-            if not line.strip():
+            if not line:
                 self.__continue_reading_headers = False
                 break
             match = status_line_regex.search(line)
