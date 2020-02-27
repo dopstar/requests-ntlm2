@@ -21,8 +21,6 @@ class HttpNtlmAuth(AuthBase):
                               HTTPS channel (Default: True)
         :param ntlm_compatibility: The Lan Manager Compatibility Level to use with the auth message
         """
-        if ntlm is None:
-            raise ImportError("NTLM libraries unavailable")
 
         self.username, self.password, self.domain = get_ntlm_credentials(username, password)
 

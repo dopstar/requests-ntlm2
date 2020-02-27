@@ -29,6 +29,34 @@ class TestHttpProxyAdapter(unittest.TestCase):
         adapter._add_host_header(request)
         self.assertIsNone(request.headers.get("Host"))
 
+    def test__add_host_header__already_added(self):
+        adapter = requests_ntlm2.adapters.HttpProxyAdapter()
+        request = requests.Request(url="http://github.com:80")
+        request.headers["Host"] = "github.com:123"
+        adapter._add_host_header(request)
+        self.assertEqual(
+            request.headers.get("Host"),
+            "github.com"
+        )
+
+        request = requests.Request(url="http://github.com:8080")
+        request.headers["Host"] = "github.com:123"
+        adapter._add_host_header(request)
+        self.assertEqual(
+            request.headers.get("Host"),
+            "github.com:8080"
+        )
+
+        request = requests.Request(url="https://github.com:8080")
+        request.headers["Host"] = "github.com:123"
+        adapter._add_host_header(request)
+        self.assertIsNone(request.headers.get("Host"))
+
+        request = requests.Request(url="https://github.com:8080")
+        request.headers["Host"] = "github.com:8080"
+        adapter._add_host_header(request)
+        self.assertEqual(request.headers.get("Host"), "github.com:8080")
+
     def test__is_valid_host_header(self):
         adapter = requests_ntlm2.adapters.HttpProxyAdapter()
         request = requests.Request()
