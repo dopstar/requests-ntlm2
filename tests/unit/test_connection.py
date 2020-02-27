@@ -185,70 +185,70 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
 
     def test_handle_http09(self):
         fp = BytesIO(
-            b'<!DOCTYPE html>\r\n'
-            b'<html class="#{theme}" lang="en">\r\n'
-            b'<head data-theme="#{theme}" data-revision="865b887">\r\n'
-            b'<meta charset="utf-8"/>\r\n'
-            b'<meta http-equiv="X-UA-Compatible" content="IE=edge"/>\r\n'
-            b'<meta name="viewport" content="width=device-width, initial-scale=1"/>\r\n'
-            b'<base/>\r\n'
-            b'<title>401 Unauthorised</title><!--[if lt IE 9]>\r\n'
-            b'<script src=\'https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js\' type=\'text/javascript\' />\r\n'  # noqa
-            b'<script src=\'https://oss.maxcdn.com/respond/1.4.2/respond.min.js\' type=\'text/javascript\' />\r\n'  # noqa
-            b'<![endif]-->\r\n'
-            b'<script type="text/javascript">\r\n'
-            b'function showURL()\r\n'
-            b'{\r\n'
-            b'document.write("<a href=\"mailto:itweb-admin@abc.def.com?subject=Proxy Authentication - " + Date() +  " \">EDConnect</a>");\r\n'  # noqa
-            b'}\r\n'
-            b'\r\n'
-            b'function URL()\r\n'
-            b'{\r\n'
-            b'document.write(document.URL);\r\n'
-            b'}\r\n'
-            b'</script>\r\n'
-            b'<style media="screen">\r\n'
-            b'</div>\r\n'
-            b'</div>\r\n'
-            b'</div>\r\n'
-            b'</aside></body>\r\n'
-            b'</html>\r\n'
-            b'HTTP/1.1 200 Connection established\r\n'
+            b"<!DOCTYPE html>\r\n"
+            b"<html class='#{theme}' lang='en'>\r\n"
+            b"<head data-theme='#{theme}' data-revision='865b887'>\r\n"
+            b"<meta charset='utf-8'/>\r\n"
+            b"<meta http-equiv='X-UA-Compatible' content='IE=edge'/>\r\n"
+            b"<meta name='viewport' content='width=device-width, initial-scale=1'/>\r\n"
+            b"<base/>\r\n"
+            b"<title>401 Unauthorised</title><!--[if lt IE 9]>\r\n"
+            b"<script src=\'https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js\' type=\'text/javascript\' />\r\n"  # noqa
+            b"<script src=\'https://oss.maxcdn.com/respond/1.4.2/respond.min.js\' type=\'text/javascript\' />\r\n"  # noqa
+            b"<![endif]-->\r\n"
+            b"<script type='text/javascript'>\r\n"
+            b"function showURL()\r\n"
+            b"{\r\n"
+            b"document.write('<a href=\"mailto:itweb-admin@abc.def.com?subject=Proxy Authentication\">EDConnect</a>');\r\n"  # noqa
+            b"}\r\n"
+            b"\r\n"
+            b"function URL()\r\n"
+            b"{\r\n"
+            b"document.write(document.URL);\r\n"
+            b"}\r\n"
+            b"</script>\r\n"
+            b"<style media='screen'>\r\n"
+            b"</div>\r\n"
+            b"</div>\r\n"
+            b"</div>\r\n"
+            b"</aside></body>\r\n"
+            b"</html>\r\n"
+            b"HTTP/1.1 200 Connection established\r\n"
         )
         response = type("Response", (), dict(fp=fp))
         status_line = self.conn.handle_http09_response(response)
-        self.assertEqual(status_line, ('HTTP/1.1', 200, 'Connection established\r\n'))
+        self.assertEqual(status_line, ("HTTP/1.1", 200, "Connection established\r\n"))
 
     def test_handle_http09__worst_case(self):
         fp = BytesIO(
-            b'<!DOCTYPE html>\r\n'
-            b'<html class="#{theme}" lang="en">\r\n'
-            b'<head data-theme="#{theme}" data-revision="865b887">\r\n'
-            b'<meta charset="utf-8"/>\r\n'
-            b'<meta http-equiv="X-UA-Compatible" content="IE=edge"/>\r\n'
-            b'<meta name="viewport" content="width=device-width, initial-scale=1"/>\r\n'
-            b'<base/>\r\n'
-            b'<title>401 Unauthorised</title><!--[if lt IE 9]>\r\n'
-            b'<script src=\'https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js\' type=\'text/javascript\' />\r\n'  # noqa
-            b'<script src=\'https://oss.maxcdn.com/respond/1.4.2/respond.min.js\' type=\'text/javascript\' />\r\n'  # noqa
-            b'<![endif]-->\r\n'
-            b'<script type="text/javascript">\r\n'
-            b'function showURL()\r\n'
-            b'{\r\n'
-            b'document.write("<a href=\"mailto:itweb-admin@abc.def.com?subject=Proxy Authentication - " + Date() +  " \">EDConnect</a>");\r\n'  # noqa
-            b'}\r\n'
-            b'\r\n'
-            b'function URL()\r\n'
-            b'{\r\n'
-            b'document.write(document.URL);\r\n'
-            b'}\r\n'
-            b'</script>\r\n'
-            b'<style media="screen">\r\n'
-            b'</div>\r\n'
-            b'</div>\r\n'
-            b'</div>\r\n'
-            b'</aside></body>\r\n'
-            b'</html>\r\n'
+            b"<!DOCTYPE html>\r\n"
+            b"<html class='#{theme}' lang='en'>\r\n"
+            b"<head data-theme='#{theme}' data-revision='865b887'>\r\n"
+            b"<meta charset='utf-8'/>\r\n"
+            b"<meta http-equiv='X-UA-Compatible' content='IE=edge'/>\r\n"
+            b"<meta name='viewport' content='width=device-width, initial-scale=1'/>\r\n"
+            b"<base/>\r\n"
+            b"<title>401 Unauthorised</title><!--[if lt IE 9]>\r\n"
+            b"<script src=\'https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js\' type=\'text/javascript\' />\r\n"  # noqa
+            b"<script src=\'https://oss.maxcdn.com/respond/1.4.2/respond.min.js\' type=\'text/javascript\' />\r\n"  # noqa
+            b"<![endif]-->\r\n"
+            b"<script type='text/javascript'>\r\n"
+            b"function showURL()\r\n"
+            b"{\r\n"
+            b"document.write('<a href=\"mailto:itweb-admin@abc.def.com?subject=Proxy Authentication\">EDConnect</a>');\r\n"  # noqa
+            b"}\r\n"
+            b"\r\n"
+            b"function URL()\r\n"
+            b"{\r\n"
+            b"document.write(document.URL);\r\n"
+            b"}\r\n"
+            b"</script>\r\n"
+            b"<style media='screen'>\r\n"
+            b"</div>\r\n"
+            b"</div>\r\n"
+            b"</div>\r\n"
+            b"</aside></body>\r\n"
+            b"</html>\r\n"
         )
         response = type("Response", (), dict(fp=fp))
         status_line = self.conn.handle_http09_response(response)

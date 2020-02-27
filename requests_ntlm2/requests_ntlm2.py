@@ -1,4 +1,3 @@
-from ntlm_auth import ntlm
 from requests.auth import AuthBase
 
 from .core import NtlmCompatibility, get_auth_type_from_header, get_cbt_data, get_ntlm_credentials
