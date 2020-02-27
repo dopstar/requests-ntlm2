@@ -217,7 +217,7 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         )
         response = type("Response", (), dict(fp=fp))
         status_line = self.conn.handle_http09_response(response)
-        self.assertEqual(status_line, ("HTTP/1.1", 200, "Connection established\r\n"))
+        self.assertEqual(status_line, (b"HTTP/1.1", 200, b"Connection established\r\n"))
 
     def test_handle_http09__worst_case(self):
         fp = BytesIO(
