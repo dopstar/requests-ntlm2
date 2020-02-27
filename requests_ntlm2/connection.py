@@ -66,7 +66,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
 
     def handle_http09_response(self, response):
         status_line_regex = re.compile(
-            r"(?P<version>HTTP/\d\.\d)\s+(?P<status>\d+)\s+(?P<message>.+)",
+            br"(?P<version>HTTP/\d\.\d)\s+(?P<status>\d+)\s+(?P<message>.+)",
             re.DOTALL
         )
 
