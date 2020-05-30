@@ -95,14 +95,14 @@ class TestCoreFunctions(unittest.TestCase):
 
     def test_fix_challenge_message__good_message(self):
         good_message = base64.b64decode(
-            'TlRMTVNTUAACAAAAAAAAAAAAAAAGggkAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA'
+            "TlRMTVNTUAACAAAAAAAAAAAAAAAGggkAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA"
         )
         fixed = requests_ntlm2.core.fix_target_info(good_message)
         self.assertEqual(fixed, good_message)
 
     def test_fix_challenge_message__bad_message(self):
         bad_message = base64.b64decode(
-            'TlRMTVNTUAACAAAAAAAAAAAAAAAGgokAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA'
+            "TlRMTVNTUAACAAAAAAAAAAAAAAAGgokAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA"
         )
         fixed = requests_ntlm2.core.fix_target_info(bad_message)
         self.assertNotEqual(fixed, bad_message)
