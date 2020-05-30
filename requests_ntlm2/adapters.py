@@ -63,7 +63,7 @@ class HttpNtlmAdapter(HttpProxyAdapter):
         """
         Thin wrapper around requests.adapters.HTTPAdapter
         """
-        self._setup(ntlm_username, ntlm_password, ntlm_compatibility)
+        self._setup(ntlm_username, ntlm_password, ntlm_compatibility, ntlm_strict_mode)
         super(HttpNtlmAdapter, self).__init__(*args, **kwargs)
 
     def close(self):
