@@ -107,13 +107,13 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
     def parse_challenge_message(self, msg2):
         challenge_msg = base64.b64decode(msg2)
         if self.ntlm_strict_mode:
-            self._challenge_message = challenge_msg
+            self._challenge_token = challenge_msg
         else:
             fixed_challenge_msg = fix_target_info(challenge_msg)
             if fixed_challenge_msg != challenge_msg:
                 logger.debug("original challenge: %s", base64.b64encode(challenge_msg))
                 logger.debug("modified challenge: %s", base64.b64encode(fixed_challenge_msg))
-            self._challenge_message = fixed_challenge_msg
+            self._challenge_token = fixed_challenge_msg
 
     def create_authenticate_message(self):
         msg = self.step(self._challenge_token)

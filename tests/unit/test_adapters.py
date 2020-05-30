@@ -95,7 +95,21 @@ class TestHttpNtlmAdapter(unittest.TestCase):
         self.assertIsInstance(adapter, requests_ntlm2.adapters.HttpNtlmAdapter)
         self.assertIsInstance(adapter, requests_ntlm2.adapters.HttpProxyAdapter)
         self.assertIsInstance(adapter, requests.adapters.HTTPAdapter)
-        mock_setup.assert_called_once_with("username", "password", 3)
+        mock_setup.assert_called_once_with("username", "password", 3, False)
+        mock_teardown.assert_not_called()
+
+    @mock.patch("requests_ntlm2.adapters.HttpNtlmAdapter._teardown")
+    @mock.patch("requests_ntlm2.adapters.HttpNtlmAdapter._setup")
+    def test_init__strict_mode(self, mock_setup, mock_teardown):
+        adapter = requests_ntlm2.adapters.HttpNtlmAdapter(
+            "username",
+            "password",
+            ntlm_strict_mode=True
+        )
+        self.assertIsInstance(adapter, requests_ntlm2.adapters.HttpNtlmAdapter)
+        self.assertIsInstance(adapter, requests_ntlm2.adapters.HttpProxyAdapter)
+        self.assertIsInstance(adapter, requests.adapters.HTTPAdapter)
+        mock_setup.assert_called_once_with("username", "password", 3, True)
         mock_teardown.assert_not_called()
 
     @mock.patch("requests_ntlm2.adapters.HttpNtlmAdapter._teardown")
