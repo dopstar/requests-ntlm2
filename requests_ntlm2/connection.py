@@ -132,7 +132,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
             domain=domain,
             auth_type="NTLM",
             ntlm_compatibility=self.ntlm_compatibility,
-            strict_mode=self.ntlm_strict_mode
+            ntlm_strict_mode=self.ntlm_strict_mode
         )
 
         negotiate_header = ntlm_context.get_negotiate_header()
