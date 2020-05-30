@@ -1,3 +1,4 @@
+import base64
 import unittest
 
 import faker
@@ -91,3 +92,17 @@ class TestCoreFunctions(unittest.TestCase):
         response = requests_ntlm2.core.get_server_cert(raw_response)
         self.assertIsNotNone(response)
         mock_get_certificate_hash_bytes.assert_called_once()
+
+    def test_fix_challenge_message__good_message(self):
+        good_message = base64.b64decode(
+            'TlRMTVNTUAACAAAAAAAAAAAAAAAGgokA8aa4xyyducAAAAAAAAAAAAAAAAAAAAAA'
+        )
+        fixed = requests_ntlm2.core.fix_target_info(base64.b64decode(good_message))
+        self.assertEqual(fixed, good_message)
+
+    def test_fix_challenge_message__bad_message(self):
+        bad_message = base64.b64decode(
+            'TlRMTVNTUAACAAAAAAAAAAAAAAAGgokAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA'
+        )
+        fixed = requests_ntlm2.core.fix_target_info(base64.b64decode(bad_message))
+        self.assertNotEqual(fixed, bad_message)
