@@ -3,7 +3,7 @@ import logging
 
 import ntlm_auth.ntlm
 
-from .core import NtlmCompatibility
+from .core import NtlmCompatibility, fix_target_info
 
 
 logger = logging.getLogger(__name__)
@@ -21,6 +21,7 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
         cbt_data=None,
         ntlm_compatibility=NtlmCompatibility.NTLMv2_DEFAULT,
         auth_type=None,
+        strict_mode=False,
     ):
         r"""
         Initialises a NTLM context to use when authenticating using the NTLM
@@ -48,6 +49,8 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
                 3-5 : NTLMv2 Only
             Note: Values 3 to 5 are no different from a client perspective
         :param auth_type: either 'NTLM' or 'Negotiate'
+        :param strict_mode: If False, tries to Type 2 (ie challenge response) NTLM message that
+                            does not conform to the NTLM spec
         """
         if auth_type not in ("NTLM", "Negotiate"):
             raise ValueError(
@@ -55,6 +58,7 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
             )
         self._auth_type = auth_type
         self._challenge_token = None
+        self.strict_mode = strict_mode
         super(HttpNtlmContext, self).__init__(
             username,
             password,
@@ -101,7 +105,15 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
         return base64.b64encode(msg)
 
     def parse_challenge_message(self, msg2):
-        self._challenge_token = base64.b64decode(msg2)
+        challenge_msg = base64.b64decode(msg2)
+        if self.strict_mode:
+            self._challenge_message = challenge_msg
+        else:
+            fixed_challenge_msg = fix_target_info(challenge_msg)
+            if fixed_challenge_msg != challenge_msg:
+                logger.debug('original challenge: %s', base64.b64encode(challenge_msg))
+                logger.debug('modified challenge: %s', base64.b64encode(fixed_challenge_msg))
+            self._challenge_message = fixed_challenge_msg
 
     def create_authenticate_message(self):
         msg = self.step(self._challenge_token)
@@ -135,5 +147,6 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
         authenticate_message = self.create_authenticate_message()
         authenticate_message = authenticate_message.decode("ascii")
         return u"{auth_type} {authenticate_message}".format(
-            auth_type=self._auth_type, authenticate_message=authenticate_message
+            auth_type=self._auth_type,
+            authenticate_message=authenticate_message
         )

@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-version = "6.2.4"
+version = "6.2.5"
 url = "https://github.com/dopstar/requests-ntlm2"
 
 if "a" in version:
@@ -17,6 +17,7 @@ with open("README.md") as fd:
 
 
 requirements = [
+    "aenum>=2.2.3",
     "requests>=2.0.0",
     "ntlm-auth>=1.0.2",
     "cryptography>=1.3",

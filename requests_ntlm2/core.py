@@ -1,17 +1,66 @@
+import base64
 import binascii
 import logging
+import struct
 import sys
 import warnings
 
+import ntlm_auth.constants
+from aenum import IntFlag
 from cryptography import x509
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from ntlm_auth.gss_channel_bindings import GssChannelBindingsStruct
+from ntlm_auth.messages import ChallengeMessage
 from requests.packages.urllib3.response import HTTPResponse
 
 
 logger = logging.getLogger(__name__)
+
+
+class NegotiateFlags(IntFlag):
+    """
+    [MS-NLMP] v28.0 2016-07-14
+
+    2.2.2.5 NEGOTIATE
+    During NTLM authentication, each of the following flags is a possible value
+    of the NegotiateFlags field of the NEGOTIATE_MESSAGE, CHALLENGE_MESSAGE and
+    AUTHENTICATE_MESSAGE, unless otherwise noted. These flags define client or
+    server NTLM capabilities supported by the sender.
+    """
+    NTLMSSP_NEGOTIATE_56 = 0x80000000
+    NTLMSSP_NEGOTIATE_KEY_EXCH = 0x40000000
+    NTLMSSP_NEGOTIATE_128 = 0x20000000
+    NTLMSSP_RESERVED_R1 = 0x10000000
+    NTLMSSP_RESERVED_R2 = 0x08000000
+    NTLMSSP_RESERVED_R3 = 0x04000000
+    NTLMSSP_NEGOTIATE_VERSION = 0x02000000
+    NTLMSSP_RESERVED_R4 = 0x01000000
+    NTLMSSP_NEGOTIATE_TARGET_INFO = 0x00800000
+    NTLMSSP_REQUEST_NON_NT_SESSION_KEY = 0x00400000
+    NTLMSSP_RESERVED_R5 = 0x00200000
+    NTLMSSP_NEGOTIATE_IDENTITY = 0x00100000
+    NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY = 0x00080000
+    NTLMSSP_RESERVED_R6 = 0x00040000
+    NTLMSSP_TARGET_TYPE_SERVER = 0x00020000
+    NTLMSSP_TARGET_TYPE_DOMAIN = 0x00010000
+    NTLMSSP_NEGOTIATE_ALWAYS_SIGN = 0x00008000
+    NTLMSSP_RESERVED_R7 = 0x00004000
+    NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED = 0x00002000
+    NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED = 0x00001000
+    NTLMSSP_ANOYNMOUS = 0x00000800
+    NTLMSSP_RESERVED_R8 = 0x00000400
+    NTLMSSP_NEGOTIATE_NTLM = 0x00000200
+    NTLMSSP_RESERVED_R9 = 0x00000100
+    NTLMSSP_NEGOTIATE_LM_KEY = 0x00000080
+    NTLMSSP_NEGOTIATE_DATAGRAM = 0x00000040
+    NTLMSSP_NEGOTIATE_SEAL = 0x00000020
+    NTLMSSP_NEGOTIATE_SIGN = 0x00000010
+    NTLMSSP_RESERVED_R10 = 0x00000008
+    NTLMSSP_REQUEST_TARGET = 0x00000004
+    NTLMSSP_NEGOTIATE_OEM = 0x00000002
+    NTLMSSP_NEGOTIATE_UNICODE = 0x00000001
 
 
 class NtlmCompatibility(object):
@@ -139,3 +188,57 @@ def get_cbt_data(response):
     cbt_data[data_type] = b":".join([channel_binding_type, cert_hash_bytes])
     logger.debug("cbt data: %s", cbt_data.get_data())
     return cbt_data
+
+
+def is_challenge_message(msg):
+    try:
+        message_type = struct.unpack('<I', msg[8:12])[0]
+        if message_type == ntlm_auth.constants.MessageTypes.NTLM_CHALLENGE:
+            return True
+    except struct.error:
+        pass
+    logger.warning('Invalid message type: %s', msg[8:12])
+    return False
+
+
+def is_challenge_message_valid(msg):
+    try:
+        _ = ChallengeMessage(msg)
+        return True
+    except struct.error:
+        return False
+
+
+def fix_target_info(challenge_msg):
+    if is_challenge_message_valid(challenge_msg):
+        return challenge_msg
+
+    if not is_challenge_message(challenge_msg):
+        return challenge_msg
+
+    msg = challenge_msg
+
+    signature = msg[:8]
+    if signature != ntlm_auth.constants.NTLM_SIGNATURE:
+        logger.warning('invalid signature: %r', signature)
+        return msg
+
+    negotiate_flags_raw = msg[20:24]
+    try:
+        negotiate_flags = struct.unpack("<I", negotiate_flags_raw)[0]
+    except struct.error:
+        logger.warning('Invalid Negotiate Flags: %s', negotiate_flags_raw)
+        return msg
+
+    if negotiate_flags & NegotiateFlags.NTLMSSP_NEGOTIATE_TARGET_INFO:
+        try:
+            negotiate_flags &= ~NegotiateFlags.NTLMSSP_NEGOTIATE_TARGET_INFO
+            msg = msg[:20] + struct.pack('<I', negotiate_flags.value) + msg[24:]
+            logger.debug('original challenge: %s', base64.b64encode(challenge_msg))
+            logger.debug('fixed challenge: %s', base64.b64encode(msg))
+            return msg
+        except struct.error:
+            return challenge_msg
+    else:
+        logger.debug('no target info set')
+    return challenge_msg
