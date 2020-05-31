@@ -48,6 +48,7 @@ class HTTPSConnection(_HTTPSConnection):
 
 class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
     ntlm_compatibility = NtlmCompatibility.NTLMv2_DEFAULT
+    ntlm_strict_mode = False
 
     def __init__(self, *args, **kwargs):
         super(VerifiedHTTPSConnection, self).__init__(*args, **kwargs)
@@ -130,7 +131,8 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
             password,
             domain=domain,
             auth_type="NTLM",
-            ntlm_compatibility=self.ntlm_compatibility
+            ntlm_compatibility=self.ntlm_compatibility,
+            ntlm_strict_mode=self.ntlm_strict_mode
         )
 
         negotiate_header = ntlm_context.get_negotiate_header()

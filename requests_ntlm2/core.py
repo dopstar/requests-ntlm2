@@ -1,13 +1,16 @@
 import binascii
 import logging
+import struct
 import sys
 import warnings
 
+import ntlm_auth.constants
 from cryptography import x509
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from ntlm_auth.gss_channel_bindings import GssChannelBindingsStruct
+from ntlm_auth.messages import ChallengeMessage
 from requests.packages.urllib3.response import HTTPResponse
 
 
@@ -139,3 +142,47 @@ def get_cbt_data(response):
     cbt_data[data_type] = b":".join([channel_binding_type, cert_hash_bytes])
     logger.debug("cbt data: %s", cbt_data.get_data())
     return cbt_data
+
+
+def is_challenge_message(msg):
+    try:
+        message_type = struct.unpack("<I", msg[8:12])[0]
+        return message_type == ntlm_auth.constants.MessageTypes.NTLM_CHALLENGE
+    except struct.error:
+        return False
+
+
+def is_challenge_message_valid(msg):
+    try:
+        _ = ChallengeMessage(msg)
+        return True
+    except struct.error:
+        return False
+
+
+def fix_target_info(challenge_msg):
+    if not is_challenge_message(challenge_msg):
+        return challenge_msg
+
+    if is_challenge_message_valid(challenge_msg):
+        return challenge_msg
+
+    signature = challenge_msg[:8]
+    if signature != ntlm_auth.constants.NTLM_SIGNATURE:
+        logger.warning("invalid signature: %r", signature)
+        return challenge_msg
+
+    negotiate_flags_raw = challenge_msg[20:24]
+    try:
+        negotiate_flags = struct.unpack("<I", negotiate_flags_raw)[0]
+    except struct.error:
+        logger.warning("Invalid Negotiate Flags: %s", negotiate_flags_raw)
+        return challenge_msg
+
+    if negotiate_flags & ntlm_auth.constants.NegotiateFlags.NTLMSSP_NEGOTIATE_TARGET_INFO:
+        try:
+            negotiate_flags &= ~ntlm_auth.constants.NegotiateFlags.NTLMSSP_NEGOTIATE_TARGET_INFO
+            return challenge_msg[:20] + struct.pack("<I", negotiate_flags) + challenge_msg[24:]
+        except struct.error:
+            return challenge_msg
+    return challenge_msg

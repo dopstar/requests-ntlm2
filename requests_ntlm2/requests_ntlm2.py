@@ -10,7 +10,11 @@ class HttpNtlmAuth(AuthBase):
     """
 
     def __init__(
-        self, username, password, send_cbt=True, ntlm_compatibility=NtlmCompatibility.NTLMv2_DEFAULT
+        self, username,
+        password,
+        send_cbt=True,
+        ntlm_compatibility=NtlmCompatibility.NTLMv2_DEFAULT,
+        ntlm_strict_mode=False
     ):
         """Create an authentication handler for NTLM over HTTP.
 
@@ -19,6 +23,8 @@ class HttpNtlmAuth(AuthBase):
         :param bool send_cbt: Will send the channel bindings over a
                               HTTPS channel (Default: True)
         :param ntlm_compatibility: The Lan Manager Compatibility Level to use with the auth message
+        :param ntlm_strict_mode: If False, tries to Type 2 (ie challenge response) NTLM message
+                                that does not conform to the NTLM spec
         """
 
         self.username, self.password, self.domain = get_ntlm_credentials(username, password)
@@ -28,6 +34,7 @@ class HttpNtlmAuth(AuthBase):
         self.password = password
         self.send_cbt = send_cbt
         self.ntlm_compatibility = ntlm_compatibility
+        self.ntlm_strict_mode = ntlm_strict_mode
 
         # This exposes the encrypt/decrypt methods used to encrypt and decrypt
         # messages sent after ntlm authentication. These methods are utilised
@@ -68,7 +75,8 @@ class HttpNtlmAuth(AuthBase):
             domain=self.domain,
             auth_type=auth_type,
             cbt_data=cbt_data,
-            ntlm_compatibility=self.ntlm_compatibility
+            ntlm_compatibility=self.ntlm_compatibility,
+            ntlm_strict_mode=self.ntlm_strict_mode
         )
         request.headers[auth_header] = ntlm_context.get_negotiate_header()
 

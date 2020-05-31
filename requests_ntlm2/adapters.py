@@ -56,13 +56,14 @@ class HttpNtlmAdapter(HttpProxyAdapter):
         ntlm_username,
         ntlm_password,
         ntlm_compatibility=NtlmCompatibility.NTLMv2_DEFAULT,
+        ntlm_strict_mode=False,
         *args,
         **kwargs
     ):
         """
         Thin wrapper around requests.adapters.HTTPAdapter
         """
-        self._setup(ntlm_username, ntlm_password, ntlm_compatibility)
+        self._setup(ntlm_username, ntlm_password, ntlm_compatibility, ntlm_strict_mode)
         super(HttpNtlmAdapter, self).__init__(*args, **kwargs)
 
     def close(self):
@@ -70,11 +71,12 @@ class HttpNtlmAdapter(HttpProxyAdapter):
         super(HttpNtlmAdapter, self).close()
 
     @staticmethod
-    def _setup(username, password, ntlm_compatibility):
+    def _setup(username, password, ntlm_compatibility, ntlm_strict_mode):
         pool_classes_by_scheme["http"].ConnectionCls = _HTTPConnection
         pool_classes_by_scheme["https"].ConnectionCls = _HTTPSConnection
         _HTTPSConnection.set_ntlm_auth_credentials(username, password)
         _HTTPSConnection.ntlm_compatibility = ntlm_compatibility
+        _HTTPConnection.ntlm_strict_mode = ntlm_strict_mode
 
     @staticmethod
     def _teardown():
