@@ -144,6 +144,14 @@ def get_cbt_data(response):
     return cbt_data
 
 
+def is_challenge_message(msg):
+    try:
+        message_type = struct.unpack("<I", msg[8:12])[0]
+        return message_type == ntlm_auth.constants.MessageTypes.NTLM_CHALLENGE
+    except struct.error:
+        return False
+
+
 def is_challenge_message_valid(msg):
     try:
         _ = ChallengeMessage(msg)
@@ -153,7 +161,15 @@ def is_challenge_message_valid(msg):
 
 
 def fix_target_info(challenge_msg):
+    if not is_challenge_message(challenge_msg):
+        return challenge_msg
+
     if is_challenge_message_valid(challenge_msg):
+        return challenge_msg
+
+    signature = challenge_msg[:8]
+    if signature != ntlm_auth.constants.NTLM_SIGNATURE:
+        logger.warning("invalid signature: %r", signature)
         return challenge_msg
 
     negotiate_flags_raw = challenge_msg[20:24]

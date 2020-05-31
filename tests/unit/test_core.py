@@ -120,3 +120,14 @@ class TestCoreFunctions(unittest.TestCase):
             "TlRMTVNTUAACAAAAAAAAAAAAAAAGgokAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA"
         )
         self.assertFalse(requests_ntlm2.core.is_challenge_message_valid(bad_message))
+
+    def test_is_challenge_message(self):
+        good_message = base64.b64decode(
+            "TlRMTVNTUAACAAAAAAAAAAAAAAAGggkAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA"
+        )
+        bad_message = base64.b64decode(
+            "TlRMTVNTUAACAAAAAAAAAAAAAAAGgokAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA"
+        )
+        self.assertTrue(requests_ntlm2.core.is_challenge_message_valid(good_message))
+        self.assertTrue(requests_ntlm2.core.is_challenge_message_valid(bad_message))
+        self.assertTrue(requests_ntlm2.core.is_challenge_message_valid(good_message[::-1]))
