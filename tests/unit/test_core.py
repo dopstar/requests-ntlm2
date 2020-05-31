@@ -93,16 +93,30 @@ class TestCoreFunctions(unittest.TestCase):
         self.assertIsNotNone(response)
         mock_get_certificate_hash_bytes.assert_called_once()
 
-    def test_fix_challenge_message__good_message(self):
+    def test_fix_challenge_message(self):
         good_message = base64.b64decode(
             "TlRMTVNTUAACAAAAAAAAAAAAAAAGggkAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA"
         )
         fixed = requests_ntlm2.core.fix_target_info(good_message)
         self.assertEqual(fixed, good_message)
 
-    def test_fix_challenge_message__bad_message(self):
         bad_message = base64.b64decode(
             "TlRMTVNTUAACAAAAAAAAAAAAAAAGgokAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA"
         )
         fixed = requests_ntlm2.core.fix_target_info(bad_message)
         self.assertNotEqual(fixed, bad_message)
+
+        very_bad_message = bad_message[::-1]
+        result = requests_ntlm2.core.fix_target_info(very_bad_message)
+        self.assertEqual(result, very_bad_message)
+
+    def test_is_challenge_message_valid(self):
+        good_message = base64.b64decode(
+            "TlRMTVNTUAACAAAAAAAAAAAAAAAGggkAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA"
+        )
+        self.assertTrue(requests_ntlm2.core.is_challenge_message_valid(good_message))
+
+        bad_message = base64.b64decode(
+            "TlRMTVNTUAACAAAAAAAAAAAAAAAGgokAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA"
+        )
+        self.assertFalse(requests_ntlm2.core.is_challenge_message_valid(bad_message))

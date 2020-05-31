@@ -144,17 +144,6 @@ def get_cbt_data(response):
     return cbt_data
 
 
-def is_challenge_message(msg):
-    try:
-        message_type = struct.unpack("<I", msg[8:12])[0]
-        if message_type == ntlm_auth.constants.MessageTypes.NTLM_CHALLENGE:
-            return True
-    except struct.error:
-        pass
-    logger.warning("Invalid message type: %s", msg[8:12])
-    return False
-
-
 def is_challenge_message_valid(msg):
     try:
         _ = ChallengeMessage(msg)
@@ -167,28 +156,17 @@ def fix_target_info(challenge_msg):
     if is_challenge_message_valid(challenge_msg):
         return challenge_msg
 
-    if not is_challenge_message(challenge_msg):
-        return challenge_msg
-
-    msg = challenge_msg
-
-    signature = msg[:8]
-    if signature != ntlm_auth.constants.NTLM_SIGNATURE:
-        logger.warning("invalid signature: %r", signature)
-        return msg
-
-    negotiate_flags_raw = msg[20:24]
+    negotiate_flags_raw = challenge_msg[20:24]
     try:
         negotiate_flags = struct.unpack("<I", negotiate_flags_raw)[0]
     except struct.error:
         logger.warning("Invalid Negotiate Flags: %s", negotiate_flags_raw)
-        return msg
+        return challenge_msg
 
     if negotiate_flags & ntlm_auth.constants.NegotiateFlags.NTLMSSP_NEGOTIATE_TARGET_INFO:
         try:
             negotiate_flags &= ~ntlm_auth.constants.NegotiateFlags.NTLMSSP_NEGOTIATE_TARGET_INFO
-            msg = msg[:20] + struct.pack("<I", negotiate_flags) + msg[24:]
-            return msg
+            return challenge_msg[:20] + struct.pack("<I", negotiate_flags) + challenge_msg[24:]
         except struct.error:
             return challenge_msg
     return challenge_msg
