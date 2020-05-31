@@ -128,6 +128,6 @@ class TestCoreFunctions(unittest.TestCase):
         bad_message = base64.b64decode(
             "TlRMTVNTUAACAAAAAAAAAAAAAAAGgokAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA"
         )
-        self.assertTrue(requests_ntlm2.core.is_challenge_message_valid(good_message))
-        self.assertTrue(requests_ntlm2.core.is_challenge_message_valid(bad_message))
-        self.assertTrue(requests_ntlm2.core.is_challenge_message_valid(good_message[::-1]))
+        self.assertTrue(requests_ntlm2.core.is_challenge_message(good_message))
+        self.assertTrue(requests_ntlm2.core.is_challenge_message(bad_message))
+        self.assertFalse(requests_ntlm2.core.is_challenge_message(good_message[::-1]))
