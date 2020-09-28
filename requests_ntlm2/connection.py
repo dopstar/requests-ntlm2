@@ -2,14 +2,15 @@ import logging
 import re
 import socket
 
+from six.moves.http_client import (
+    PROXY_AUTHENTICATION_REQUIRED,
+    LineTooLong
+)
+
 from requests.packages.urllib3.connection import DummyConnection
 from requests.packages.urllib3.connection import HTTPConnection as _HTTPConnection
 from requests.packages.urllib3.connection import HTTPSConnection as _HTTPSConnection
 from requests.packages.urllib3.connection import VerifiedHTTPSConnection as _VerifiedHTTPSConnection
-from requests.packages.urllib3.packages.six.moves.http_client import (
-    PROXY_AUTHENTICATION_REQUIRED,
-    LineTooLong
-)
 
 from .core import NtlmCompatibility, get_ntlm_credentials
 from .dance import HttpNtlmContext

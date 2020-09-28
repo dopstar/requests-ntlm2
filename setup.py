@@ -20,6 +20,7 @@ requirements = [
     "requests>=2.0.0",
     "ntlm-auth>=1.0.2",
     "cryptography>=1.3",
+    "six>=1.10",
 ]
 
 testing_requirements = [
