@@ -52,7 +52,7 @@ class TestHttpNtlmContext(unittest.TestCase):
         authenticate_header = ctx.get_negotiate_header()
         self.assertEqual(
             authenticate_header,
-            "NTLM TlRMTVNTUAABAAAAMoCI4gAAAAAoAAAAAAAAACgAAAAGAbEdAAAADw=="
+            "NTLM TlRMTVNTUAABAAAAMYCI4gAAAAAoAAAAAAAAACgAAAAGAbEdAAAADw=="
         )
 
     def test_get_authenticate_header(self):
