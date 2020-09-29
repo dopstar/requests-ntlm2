@@ -59,7 +59,7 @@ class TestHttpNtlmContext(unittest.TestCase):
     def test_get_authenticate_header(self):
         username = self.fake.user_name()
         password = self.fake.password()
-        ctx = requests_ntlm2.dance.HttpNtlmContext(username, password, domain='', auth_type="NTLM")
+        ctx = requests_ntlm2.dance.HttpNtlmContext(username, password, domain="", auth_type="NTLM")
         _ = ctx.get_negotiate_header()  # this is necessary
         challenge = (
             "NTLM TlRMTVNTUAACAAAAAAAAAAAAAAAyAojgAnH/LKem1bAAAA"
@@ -71,7 +71,7 @@ class TestHttpNtlmContext(unittest.TestCase):
         ctx.set_challenge_from_header(challenge)
 
         authenticate_header = ctx.get_authenticate_header()
-        self.assertTrue(authenticate_header.startswith('NTLM '))
+        self.assertTrue(authenticate_header.startswith("NTLM "))
         decoded_authenticate_data = base64.b64decode(authenticate_header.split()[1])
         self.assertEqual(decoded_authenticate_data[:9], b"NTLMSSP\x00\x03")
 
