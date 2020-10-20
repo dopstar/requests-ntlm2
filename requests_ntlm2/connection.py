@@ -155,7 +155,8 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                     # for sites which EOF without sending a trailer
                     break
                 if line in (b"\r\n", b"\n", b""):
-                    break
+                    if not line or line in (b"\r\n", b"\n", b""):
+                        break
 
                 for header in _TRACKED_HEADERS:
                     if line.decode("utf-8").lower().startswith("{}:".format(header)):
