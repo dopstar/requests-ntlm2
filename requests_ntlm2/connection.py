@@ -155,6 +155,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                     # for sites which EOF without sending a trailer
                     break
                 if line in (b"\r\n", b"\n", b""):
+                    line = response.fp.readline()
                     if not line or line in (b"\r\n", b"\n", b""):
                         break
 
