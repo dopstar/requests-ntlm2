@@ -1,6 +1,7 @@
 import logging
 import re
 import socket
+import select
 
 from requests.packages.urllib3.connection import DummyConnection
 from requests.packages.urllib3.connection import HTTPConnection as _HTTPConnection
@@ -10,6 +11,9 @@ from six.moves.http_client import PROXY_AUTHENTICATION_REQUIRED, LineTooLong
 
 from .core import NtlmCompatibility, get_ntlm_credentials
 from .dance import HttpNtlmContext
+
+
+IO_WAIT_TIMEOUT = 0.1
 
 
 logger = logging.getLogger(__name__)
@@ -61,6 +65,27 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
     def clear_ntlm_auth_credentials(cls):
         cls._ntlm_credentials = None
         del cls._ntlm_credentials
+
+    def _is_line_blank(self, line):
+        # for sites which EOF without sending a trailer
+        if not line or line in (b"\r\n", b"\n", b""):
+            last_line_is_blank = True
+        else:
+            last_line_is_blank = False
+        return last_line_is_blank
+
+    def _read_response_line_if_ready(self, response):
+        (ready, _, _) = select.select([response.fp], (), (), IO_WAIT_TIMEOUT)
+        if ready:
+            line = response.fp.readline()
+        else:
+            line = None
+        return line
+
+    def _flush_response_buffer(self, response):
+        (ready, _, _) = select.select([response.fp], (), (), IO_WAIT_TIMEOUT)
+        if ready:
+            response.fp.read()
 
     def handle_http09_response(self, response):
         status_line_regex = re.compile(
@@ -140,8 +165,23 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         if code == PROXY_AUTHENTICATION_REQUIRED:
             authenticate_hdr = None
             match_string = "Proxy-Authenticate: NTLM "
+            last_line_is_blank = False
             while True:
-                line = response.fp.readline()
+                if last_line_is_blank:
+                    line = self._read_response_line_if_ready(response)
+                else:
+                    line = response.fp.readline()
+                this_line_is_blank = self._is_line_blank(line)
+                if last_line_is_blank and this_line_is_blank:
+                    self._flush_response_buffer(response)
+                    break
+
+                if this_line_is_blank:
+                    last_line_is_blank = True
+                    continue
+                else:
+                    last_line_is_blank = False
+
                 if line.decode("utf-8").startswith(match_string):
                     logger.debug("< %r", line)
                     line = line.decode("utf-8")
@@ -151,13 +191,6 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
 
                 if len(line) > _MAXLINE:
                     raise LineTooLong("header line")
-                if not line:
-                    # for sites which EOF without sending a trailer
-                    break
-                if line in (b"\r\n", b"\n", b""):
-                    line = response.fp.readline()
-                    if not line or line in (b"\r\n", b"\n", b""):
-                        break
 
                 for header in _TRACKED_HEADERS:
                     if line.decode("utf-8").lower().startswith("{}:".format(header)):
@@ -176,10 +209,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
             line = response.fp.readline()
             if len(line) > _MAXLINE:
                 raise LineTooLong("header line")
-            if not line:
-                # for sites which EOF without sending trailer
-                break
-            if line == b"\r\n":
+            if self._is_line_blank(line):
                 break
 
 
