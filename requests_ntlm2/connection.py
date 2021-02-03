@@ -1,7 +1,7 @@
 import logging
 import re
-import socket
 import select
+import socket
 
 from requests.packages.urllib3.connection import DummyConnection
 from requests.packages.urllib3.connection import HTTPConnection as _HTTPConnection
