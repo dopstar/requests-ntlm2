@@ -37,7 +37,8 @@ testing_requirements = [
 
 linting_requirements = [
     "flake8",
-    "bandit",
+    "bandit==1.6.2; python_version == '2.7'",
+    "bandit; python_version != '2.7'",
     "flake8-isort",
     "flake8-quotes",
 ]
