@@ -15,7 +15,7 @@ class TestHttpNtlmContext(unittest.TestCase):
 
     def test__init(self):
         error_msg = 'Expected "NTLM" or "Negotiate" auth_type, got None'
-        with self.assertRaisesRegexp(ValueError, error_msg):
+        with self.assertRaisesRegex(ValueError, error_msg):
             requests_ntlm2.dance.HttpNtlmContext("username", "password")
 
     def test__init__ntlm(self):

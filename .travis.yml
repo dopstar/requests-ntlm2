@@ -10,11 +10,11 @@ install:
 - pip install -U pip setuptools wheel
 - pip install .[testing,linting]
 before_script:
-- python -m tests.test_server &
+- python -m tests.test_server &> /dev/null &
 script:
 - flake8 .
 - bandit -r requests_ntlm2
-- py.test --ignore=tests/functional/test_functional.py --ignore=tests/test_server.py --cov requests_ntlm2 --cov-report term-missing tests
+- py.test -xv --ignore=tests/functional/test_functional.py --ignore=tests/test_server.py --cov requests_ntlm2 --cov-report term-missing tests
 after_success:
 - codecov --token=eb6eedbf-63e1-49ab-a2a9-e8c9e806efe0
 deploy:

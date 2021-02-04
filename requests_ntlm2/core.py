@@ -186,3 +186,7 @@ def fix_target_info(challenge_msg):
         except struct.error:
             return challenge_msg
     return challenge_msg
+
+
+def noop():
+    pass

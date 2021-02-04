@@ -1,10 +1,13 @@
 import socket
+import sys
+import tempfile
 import unittest
 
 import faker
 import mock
+from six.moves.http_client import LineTooLong
 
-from requests_ntlm2.connection import VerifiedHTTPSConnection
+from requests_ntlm2.connection import _MAXLINE, VerifiedHTTPSConnection
 
 
 try:
@@ -82,6 +85,37 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
     @mock.patch("requests_ntlm2.connection.select.select")
     @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection._get_response")
     @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection.send")
+    def test__tunnel__line_too_long(self, mock_send, mock_get_response, mock_select):
+        fp = BytesIO(
+            b"Proxy-Authenticate: NTLM TlRMTVNTUAACAAAABgAGADgAAAAGgokAyYpGWqVMA/QAAAAAAAAA"
+            b"AH4AfgA+AAAABQCTCAAAAA9ERVROU1cCAAwARABFAFQATgBTAFcAAQAaAFMARwAtADQAOQAxADMAM"
+            b"wAwADAAMAAwADkABAAUAEQARQBUAE4AUwBXAC4AVwBJAE4AAwAwAHMAZwAtADQAOQAxADMAMwAwAD"
+            b"AAMAAwADkALgBkAGUAdABuAHMAdwAuAHcAaQBuAAAAAAA=\r\n"
+            b"Connection: Keep-Alive\r\n"
+            b"Proxy-Connection: Keep-Alive\r\n"
+            b"Server: nginx\r\n"
+            b"Info: x%s\r\n"
+            b"\r\n"
+            b"this is the body\r\n"
+            b"\r\n" % (b"x" * _MAXLINE)
+        )
+        response = type("Response", (), dict(fp=fp))
+        mock_get_response.return_value = "HTTP/1.1", 407, "Proxy Authentication Required", response
+        mock_select.return_value = [(True), (), ()]
+        self.conn.set_ntlm_auth_credentials(r"DOMAIN\username", "password")
+
+        with self.assertRaises(LineTooLong):
+            self.conn._tunnel()
+
+        fp.seek(0)
+        mock_get_response.return_value = "HTTP/1.1", 200, "OK", response
+        self.conn.set_ntlm_auth_credentials(r"DOMAIN\username", "password")
+        with self.assertRaises(LineTooLong):
+            self.conn._tunnel()
+
+    @mock.patch("requests_ntlm2.connection.select.select")
+    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection._get_response")
+    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection.send")
     def test_tunnel__no_headers(self, mock_send, mock_get_response, mock_select):
         fp = BytesIO()
         response = type("Response", (), dict(fp=fp))
@@ -93,7 +127,7 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         self.conn.set_ntlm_auth_credentials(username, password)
 
         error_msg = "Tunnel connection failed: 407 Proxy Authentication Required"
-        with self.assertRaisesRegexp(socket.error, error_msg):
+        with self.assertRaisesRegex(socket.error, error_msg):
             self.conn._tunnel()
 
         mock_get_response.assert_called()
@@ -296,3 +330,110 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         response = type("Response", (), dict(fp=fp))
         status_line = self.conn.handle_http09_response(response)
         self.assertIsNone(status_line)
+
+    def test__read_response_line_if_ready(self):
+        data = (
+            b"<!DOCTYPE html>\r\n"
+            b"<html class='#{theme}' lang='en'>\r\n"
+            b"<head data-theme='#{theme}' data-revision='865b887'>\r\n"
+            b"<meta charset='utf-8'/>\r\n"
+            b"<meta http-equiv='X-UA-Compatible' content='IE=edge'/>\r\n"
+            b"<meta name='viewport' content='width=device-width, initial-scale=1'/>\r\n"
+            b"<base/>\r\n"
+            b"<title>401 Unauthorised</title><!--[if lt IE 9]>\r\n"
+            b"<script src=\'https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js\' type=\'text/javascript\' />\r\n"  # noqa
+            b"<script src=\'https://oss.maxcdn.com/respond/1.4.2/respond.min.js\' type=\'text/javascript\' />\r\n"  # noqa
+            b"<![endif]-->\r\n"
+            b"<script type='text/javascript'>\r\n"
+            b"function showURL()\r\n"
+            b"{\r\n"
+            b"document.write('<a href=\"mailto:itweb-admin@abc.def.com?subject=Proxy Authentication\">EDConnect</a>');\r\n"  # noqa
+            b"}\r\n"
+            b"\r\n"
+            b"function URL()\r\n"
+            b"{\r\n"
+            b"document.write(document.URL);\r\n"
+            b"}\r\n"
+            b"</script>\r\n"
+            b"<style media='screen'>\r\n"
+            b"</div>\r\n"
+            b"</div>\r\n"
+            b"</div>\r\n"
+            b"</aside></body>\r\n"
+            b"</html>\r\n"
+        )
+        with tempfile.TemporaryFile() as fd:
+            fd.write(data)
+            fd.seek(0)
+            response = type("Response", (), dict(fp=fd))
+            line = self.conn._read_response_line_if_ready(response)
+            assert line == b"<!DOCTYPE html>\r\n"
+
+        with tempfile.TemporaryFile() as fd:
+            fd.write(data)
+            fd.seek(0)
+            response = type("Response", (), dict(fp=fd))
+            with mock.patch("select.select", return_value=((), (), ())) as mock_select:
+                line = self.conn._read_response_line_if_ready(response)
+                assert line is None
+                mock_select.assert_called_once_with([response.fp], (), (), 0.1)
+
+    def test__flush_response_buffer(self):
+        data = (
+            b"<!DOCTYPE html>\r\n"
+            b"<html class='#{theme}' lang='en'>\r\n"
+            b"<head data-theme='#{theme}' data-revision='865b887'>\r\n"
+            b"<meta charset='utf-8'/>\r\n"
+            b"<meta http-equiv='X-UA-Compatible' content='IE=edge'/>\r\n"
+            b"<meta name='viewport' content='width=device-width, initial-scale=1'/>\r\n"
+            b"<base/>\r\n"
+            b"<title>401 Unauthorised</title><!--[if lt IE 9]>\r\n"
+            b"<script src=\'https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js\' type=\'text/javascript\' />\r\n"  # noqa
+            b"<script src=\'https://oss.maxcdn.com/respond/1.4.2/respond.min.js\' type=\'text/javascript\' />\r\n"  # noqa
+            b"<![endif]-->\r\n"
+            b"<script type='text/javascript'>\r\n"
+            b"function showURL()\r\n"
+            b"{\r\n"
+            b"document.write('<a href=\"mailto:itweb-admin@abc.def.com?subject=Proxy Authentication\">EDConnect</a>');\r\n"  # noqa
+            b"}\r\n"
+            b"\r\n"
+            b"function URL()\r\n"
+            b"{\r\n"
+            b"document.write(document.URL);\r\n"
+            b"}\r\n"
+            b"</script>\r\n"
+            b"<style media='screen'>\r\n"
+            b"</div>\r\n"
+            b"</div>\r\n"
+            b"</div>\r\n"
+            b"</aside></body>\r\n"
+            b"</html>\r\n"
+        )
+        with tempfile.TemporaryFile() as fd:
+            fd.write(data)
+            fd.seek(0)
+            response = type("Response", (), dict(fp=fd))
+            result = self.conn._flush_response_buffer(response)
+            assert result is None
+            assert fd.read() == b""
+
+        with tempfile.TemporaryFile() as fd:
+            fd.write(data)
+            fd.seek(0)
+            response = type("Response", (), dict(fp=fd))
+            with mock.patch("select.select", return_value=((), (), ())) as mock_select:
+                result = self.conn._flush_response_buffer(response)
+                assert result is None
+                mock_select.assert_called_once_with([response.fp], (), (), 0.1)
+                assert fd.read() == data
+
+
+def test_import_error():
+    with mock.patch("requests_ntlm2.core.noop") as mock_noop:
+        mock_noop.side_effect = ImportError()
+        import requests_ntlm2.connection  # noqa - this is ensure sys.modules key is present
+        del sys.modules["requests_ntlm2.connection"]
+        import requests_ntlm2.connection  # noqa
+        assert (
+            requests_ntlm2.connection.HTTPSConnection is requests_ntlm2.connection.DummyConnection
+        )
