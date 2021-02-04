@@ -1,3 +1,5 @@
+import io
+
 from requests.auth import AuthBase
 
 from .core import NtlmCompatibility, get_auth_type_from_header, get_cbt_data, get_ntlm_credentials
@@ -59,7 +61,10 @@ class HttpNtlmAuth(AuthBase):
         )
         if hasattr(response.request.body, "seek"):
             if content_length > 0:
-                response.request.body.seek(-content_length, 1)
+                try:
+                    response.request.body.seek(-content_length, 1)
+                except io.UnsupportedOperation:
+                    response.request.body.seek(0, 0)
             else:
                 response.request.body.seek(0, 0)
 
