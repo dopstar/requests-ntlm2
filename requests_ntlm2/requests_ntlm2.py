@@ -63,7 +63,7 @@ class HttpNtlmAuth(AuthBase):
             if content_length > 0:
                 try:
                     response.request.body.seek(-content_length, 1)
-                except io.UnsupportedOperation:
+                except (io.UnsupportedOperation, OSError, IOError, ValueError):
                     response.request.body.seek(0, 0)
             else:
                 response.request.body.seek(0, 0)
