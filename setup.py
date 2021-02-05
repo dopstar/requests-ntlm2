@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-version = "6.2.10"
+version = "6.2.11"
 url = "https://github.com/dopstar/requests-ntlm2"
 
 if "a" in version:
