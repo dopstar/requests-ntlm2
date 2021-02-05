@@ -127,7 +127,7 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         self.conn.set_ntlm_auth_credentials(username, password)
 
         error_msg = "Tunnel connection failed: 407 Proxy Authentication Required"
-        with self.assertRaisesRegex(socket.error, error_msg):
+        with self.assertRaisesRegexp(socket.error, error_msg):
             self.conn._tunnel()
 
         mock_get_response.assert_called()
