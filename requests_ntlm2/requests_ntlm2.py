@@ -45,7 +45,7 @@ class HttpNtlmAuth(AuthBase):
         self.session_security = None
 
     def retry_using_http_ntlm_auth(
-        self, auth_header_field, auth_header, response, auth_type, args
+        self, auth_header_field, auth_header, response, auth_type, kwargs
     ):
         # Get the certificate of the server if using HTTPS for CBT
         cbt_data = None
@@ -91,7 +91,7 @@ class HttpNtlmAuth(AuthBase):
         # specified in args. In addition, we expect this request to give us a
         # challenge and not the real content, so the content will be short
         # anyway.
-        args_nostream = dict(args, stream=False)
+        args_nostream = dict(kwargs, stream=False)
         response2 = response.connection.send(request, **args_nostream)
 
         # needed to make NTLM auth compatible with requests-2.3.0
@@ -114,7 +114,7 @@ class HttpNtlmAuth(AuthBase):
         # build response
         # Get the response based on the challenge message
         request.headers[auth_header] = ntlm_context.get_authenticate_header()
-        response3 = response2.connection.send(request, **args)
+        response3 = response2.connection.send(request, **kwargs)
 
         # Update the history.
         response3.history.append(response)

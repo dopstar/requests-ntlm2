@@ -11,6 +11,12 @@ import requests_ntlm2.core
 from tests.test_utils import domain, password, username
 
 
+try:
+    from StringIO import StringIO as BytesIO  # py2
+except ImportError:
+    from io import BytesIO  # py3
+
+
 class TestHttpNtlmAuth(unittest.TestCase):
     def setUp(self):
         self.test_server_url = "http://localhost:5000/"
@@ -210,6 +216,65 @@ class TestHttpNtlmAuth(unittest.TestCase):
 
         assert actual_domain == expected_domain
         assert actual_user == expected_user
+
+    def test_retry_using_http_ntlm_auth(self):
+        auth = requests_ntlm2.HttpNtlmAuth(self.test_server_username, self.test_server_password)
+        response = requests.Response()
+        response.request = requests.Request(headers={"Proxy-Authenticate": "NTLM bla bla"})
+        response.status_code = 407
+        response.headers["Proxy-Authenticate"] = "NTLM"
+        result = auth.retry_using_http_ntlm_auth(
+            "foobar",
+            "Proxy-Authenticate",
+            response,
+            "foobar",
+            {}
+        )
+        assert result is response
+
+        fp = BytesIO(
+            b"Proxy-Authenticate: NTLM TlRMTVNTUAACAAAABgAGADgAAAAGgokAyYpGWqVMA/QAAAAAAAAA"
+            b"AH4AfgA+AAAABQCTCAAAAA9ERVROU1cCAAwARABFAFQATgBTAFcAAQAaAFMARwAtADQAOQAxADMAM"
+            b"wAwADAAMAAwADkABAAUAEQARQBUAE4AUwBXAC4AVwBJAE4AAwAwAHMAZwAtADQAOQAxADMAMwAwAD"
+            b"AAMAAwADkALgBkAGUAdABuAHMAdwAuAHcAaQBuAAAAAAA=\r\n"
+            b"Connection: Keep-Alive\r\n"
+            b"Proxy-Connection: Keep-Alive\r\n"
+            b"Server: nginx\r\n"
+            b"\r\n"
+            b"this is the body\r\n"
+            b"\r\n"
+        )
+        content_length = len(fp.read())
+        assert fp.read() == b""
+
+        response = requests.Response()
+        response.request = requests.Request(headers={})
+        response.request.copy = mock.MagicMock()
+        response.status_code = 407
+        response.request.body = fp
+        response.request.headers["Content-Length"] = str(content_length)
+
+        response2 = requests.Response()
+        response2.request = requests.Request(headers={})
+        response2.raw = mock.MagicMock()
+        response2.request.copy = mock.MagicMock()
+        response2.headers = {"set-cookie": "test-cookie", "foobar": "baz", "foobar2": "bla"}
+        response2.connection = mock.MagicMock()
+
+        response.raw = mock.MagicMock()
+        response.connection = mock.MagicMock()
+        response.connection.send = mock.MagicMock(return_value=response2)
+        func_spec = "requests_ntlm2.dance.HttpNtlmContext.get_authenticate_header"
+        with mock.patch(func_spec) as mock_auth_header:
+            result = auth.retry_using_http_ntlm_auth(
+                "foobar",
+                "Proxy-Authenticate",
+                response,
+                "NTLM",
+                {}
+            )
+            assert result is response2.connection.send.return_value
+            mock_auth_header.assert_called()
 
 
 class TestCertificateHash(unittest.TestCase):
