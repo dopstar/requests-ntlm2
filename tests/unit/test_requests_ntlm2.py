@@ -278,7 +278,11 @@ class TestHttpNtlmAuth(unittest.TestCase):
             mock_auth_header.assert_called()
 
     def test_retry_using_http_ntlm_auth__no_content_length(self):
-        auth = requests_ntlm2.HttpNtlmAuth(self.test_server_username, self.test_server_password)
+        auth = requests_ntlm2.HttpNtlmAuth(
+            self.test_server_username,
+            self.test_server_password,
+            send_cbt=False
+        )
         response = requests.Response()
         response.request = requests.Request(headers={"Proxy-Authenticate": "NTLM bla bla"})
         response.status_code = 407

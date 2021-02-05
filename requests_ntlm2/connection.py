@@ -53,7 +53,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
 
     def __init__(self, *args, **kwargs):
         super(VerifiedHTTPSConnection, self).__init__(*args, **kwargs)
-        self.__continue_reading_headers = True
+        self._continue_reading_headers = True
         if self.ntlm_compatibility is None:
             self.ntlm_compatibility = NtlmCompatibility.NTLMv2_DEFAULT
 
@@ -96,7 +96,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         while True:
             line = response.fp.readline()
             if not line:
-                self.__continue_reading_headers = False
+                self._continue_reading_headers = False
                 break
             match = status_line_regex.search(line)
             if match:
@@ -205,7 +205,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
             raise socket.error(
                 "Tunnel connection failed: %d %s" % (code, message.strip())
             )
-        while self.__continue_reading_headers:
+        while self._continue_reading_headers:
             line = response.fp.readline()
             if len(line) > _MAXLINE:
                 raise LineTooLong("header line")
