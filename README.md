@@ -2,7 +2,7 @@
 <div align="center">NTLM authentication plugin for Requests</div>
 <br />
 
-[![Build Status](https://travis-ci.org/dopstar/requests-ntlm2.svg?branch=master)](https://travis-ci.org/dopstar/requests-ntlm2)
+[![Build Status](https://github.com/dopstar/requests-ntlm2/workflows/build/badge.svg?branch=master)](https://github.com/dopstar/requests-ntlm2/actions?query=workflow%3Abuild)
 [![codecov](https://codecov.io/gh/dopstar/requests-ntlm2/branch/master/graph/badge.svg)](https://codecov.io/gh/dopstar/requests-ntlm2)
 [![Python Version](https://img.shields.io/pypi/pyversions/requests-ntlm2.svg)](https://pypi.python.org/pypi/requests-ntlm2)
 [![PyPI Status](https://img.shields.io/pypi/v/requests-ntlm2.svg)](https://pypi.python.org/pypi/requests-ntlm2)
