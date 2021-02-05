@@ -22,7 +22,7 @@ jobs:
     - name: Lint
       run: |
         pip install '.[linting]'
-        flake8 .
+        flake8 requests_ntlm2
         bandit -r requests_ntlm2
 
   test:
