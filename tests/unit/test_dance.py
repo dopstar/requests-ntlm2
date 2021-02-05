@@ -2,6 +2,7 @@ import base64
 import unittest
 
 import faker
+import mock
 import ntlm_auth.ntlm
 
 import requests_ntlm2
@@ -238,3 +239,29 @@ class TestHttpNtlmContext(unittest.TestCase):
         ctx.negotiate_message = None
         self.assertIsNone(ctx.negotiate_message)
         self.assertIsNone(ctx._negotiate_message)
+
+    def test_parse_challenge_message(self):
+        username = self.fake.user_name()
+        password = self.fake.password()
+        ctx = requests_ntlm2.dance.HttpNtlmContext(
+            username,
+            password,
+            auth_type="NTLM",
+            ntlm_strict_mode=True
+        )
+        msg = "TlRMTVNTUAACAAAAAAAAAAAAAAAGgokAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA"
+        ctx.parse_challenge_message(msg)
+        self.assertEqual(ctx._challenge_token, base64.b64decode(msg))
+
+        ctx = requests_ntlm2.dance.HttpNtlmContext(
+            username,
+            password,
+            auth_type="NTLM",
+            ntlm_strict_mode=False
+        )
+        with mock.patch("requests_ntlm2.dance.fix_target_info") as mock_fix_target_info:
+            mock_fix_target_info.return_value = b"uh-huh!"
+            ctx.parse_challenge_message(msg)
+            self.assertNotEqual(ctx._challenge_token, base64.b64decode(msg))
+            mock_fix_target_info.assert_called_once_with(base64.b64decode(msg))
+            assert ctx._challenge_token == b"uh-huh!"

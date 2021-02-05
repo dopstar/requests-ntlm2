@@ -1,4 +1,5 @@
 import base64
+import struct
 import unittest
 
 import faker
@@ -128,6 +129,54 @@ class TestCoreFunctions(unittest.TestCase):
         bad_message = base64.b64decode(
             "TlRMTVNTUAACAAAAAAAAAAAAAAAGgokAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA"
         )
+        invalid_message = b"foobar"
         self.assertTrue(requests_ntlm2.core.is_challenge_message(good_message))
         self.assertTrue(requests_ntlm2.core.is_challenge_message(bad_message))
         self.assertFalse(requests_ntlm2.core.is_challenge_message(good_message[::-1]))
+        self.assertFalse(requests_ntlm2.core.is_challenge_message(invalid_message))
+
+    def test_fix_target_info(self):
+        with mock.patch("requests_ntlm2.core.is_challenge_message") as is_challenge:
+            is_challenge.return_value = False
+            result = requests_ntlm2.core.fix_target_info("foobar")
+            self.assertEqual(result, "foobar")
+            is_challenge.assert_called_once_with("foobar")
+
+        with mock.patch("requests_ntlm2.core.is_challenge_message", return_value=True):
+            with mock.patch("requests_ntlm2.core.is_challenge_message_valid") as is_challenge_valid:
+                is_challenge_valid.return_value = True
+                result = requests_ntlm2.core.fix_target_info("foobar")
+                self.assertEqual(result, "foobar")
+                is_challenge_valid.assert_called_once_with("foobar")
+
+        with mock.patch("requests_ntlm2.core.is_challenge_message", return_value=True):
+            with mock.patch("requests_ntlm2.core.is_challenge_message_valid", return_value=False):
+                result = requests_ntlm2.core.fix_target_info("foobar")
+                self.assertEqual(result, "foobar")
+
+        msg = b"NTLMSSP\x00foobar"
+        with mock.patch("requests_ntlm2.core.is_challenge_message", return_value=True):
+            with mock.patch("requests_ntlm2.core.is_challenge_message_valid", return_value=False):
+                result = requests_ntlm2.core.fix_target_info(msg)
+                self.assertEqual(result, msg)
+
+        bad_message = base64.b64decode(
+            "TlRMTVNTUAACAAAAAAAAAAAAAAAGgokAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA"
+        )
+        with mock.patch("requests_ntlm2.core.is_challenge_message", return_value=True):
+            with mock.patch("requests_ntlm2.core.is_challenge_message_valid", return_value=False):
+                with mock.patch("struct.pack", side_effect=struct.error) as mock_pack:
+                    result = requests_ntlm2.core.fix_target_info(bad_message)
+                    self.assertEqual(result, bad_message)
+                    mock_pack.assert_called_once()
+
+        good_message = base64.b64decode(
+            "TlRMTVNTUAACAAAAAAAAAAAAAAAGggkAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA"
+        )
+        good_message += b"suffix"
+        with mock.patch("requests_ntlm2.core.is_challenge_message", return_value=True):
+            with mock.patch("requests_ntlm2.core.is_challenge_message_valid", return_value=False):
+                with mock.patch("struct.unpack", return_value=(0,)) as mock_unpack:
+                    result = requests_ntlm2.core.fix_target_info(good_message)
+                    self.assertEqual(result, good_message)
+                    mock_unpack.assert_called_once()
