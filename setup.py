@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-version = "6.3.0"
+version = "6.3.1"
 url = "https://github.com/dopstar/requests-ntlm2"
 
 if "a" in version:
@@ -54,6 +54,11 @@ setup(
     author="Mkhanyisi Madlavana",
     author_email="mmadlavana@gmail.com",
     url=url,
+    project_urls={
+          'Documentation': 'https://dopstar.github.io/requests-ntlm2',
+          'Source': url,
+          'Tracker': '{}/issues'.format(url),
+    },
     download_url="{url}/archive/{version}.tar.gz".format(url=url, version=version),
     description=(
         "The HTTP NTLM proxy and/or server authentication library."
@@ -63,6 +68,7 @@ setup(
     license="ISC",
     keywords=["NTLM", "requests", "proxy", "authorization", "NTLM dance"],
     package_dir={"requests_ntlm2": "requests_ntlm2"},
+    package_data={"requests_ntlm2": ["*.md", "LICENSE"]},
     classifiers=[
         "Development Status :: {0}".format(dev_status),
         "Intended Audience :: Developers",
