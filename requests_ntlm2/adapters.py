@@ -2,8 +2,8 @@ import logging
 
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.connection import HTTPConnection, HTTPSConnection
-from six.moves.urllib.parse import urlparse
 from requests.packages.urllib3.poolmanager import pool_classes_by_scheme
+from six.moves.urllib.parse import urlparse
 
 from .connection import HTTPConnection as _HTTPConnection
 from .connection import HTTPSConnection as _HTTPSConnection
