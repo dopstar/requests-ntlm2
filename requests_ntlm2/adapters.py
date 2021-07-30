@@ -1,12 +1,8 @@
 import logging
 
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
-
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.connection import HTTPConnection, HTTPSConnection
+from six.moves.urllib.parse import urlparse
 from urllib3.poolmanager import pool_classes_by_scheme
 
 from .connection import HTTPConnection as _HTTPConnection
@@ -26,7 +22,7 @@ class _HttpProxyAdapter(HTTPAdapter):
             else:
                 self._remove_host_header(request)
 
-        parse_result = urlparse.urlparse(request.url)
+        parse_result = urlparse(request.url)
         if parse_result.scheme == "http":
             if parse_result.port == 80:
                 request.headers["Host"] = parse_result.hostname
@@ -38,7 +34,7 @@ class _HttpProxyAdapter(HTTPAdapter):
         host = request.headers.get("Host")
         if not host:
             return False
-        parse_result = urlparse.urlparse(request.url)
+        parse_result = urlparse(request.url)
         if parse_result.scheme == "https":
             if host == parse_result.netloc and parse_result.port is not None:
                 return True
