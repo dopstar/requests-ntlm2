@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-version = "0.0.6"
+version = "6.3.2"
 url = "https://github.com/dopstar/requests-ntlm2"
 
 if "a" in version:
@@ -56,9 +56,9 @@ setup(
     author_email="mmadlavana@gmail.com",
     url=url,
     project_urls={
-        'Documentation': 'https://dopstar.github.io/requests-ntlm2',
-        'Source': url,
-        'Tracker': '{}/issues'.format(url),
+        "Documentation": "https://dopstar.github.io/requests-ntlm2",
+        "Source": url,
+        "Tracker": "{}/issues".format(url),
     },
     download_url="{url}/archive/{version}.tar.gz".format(url=url, version=version),
     description=(
