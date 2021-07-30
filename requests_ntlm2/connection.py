@@ -213,7 +213,6 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                 break
 
 
-
 try:
     noop()  # for testing purposes
     import ssl  # noqa
