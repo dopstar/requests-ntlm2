@@ -1,18 +1,23 @@
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
+import logging
 
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.connection import HTTPConnection, HTTPSConnection
 from requests.packages.urllib3.poolmanager import pool_classes_by_scheme
+from six.moves.urllib.parse import urlparse
 
 from .connection import HTTPConnection as _HTTPConnection
 from .connection import HTTPSConnection as _HTTPSConnection
 from .core import NtlmCompatibility
 
 
+logger = logging.getLogger(__name__)
+
+
 class HttpProxyAdapter(HTTPAdapter):
+    def __init__(self, user_agent=None, *args, **kwargs):
+        self._user_agent = user_agent
+        super(HttpProxyAdapter, self).__init__(*args, **kwargs)
+
     def _add_host_header(self, request):
         if request.headers.get("Host"):
             if self._is_valid_host_header(request):
@@ -20,7 +25,7 @@ class HttpProxyAdapter(HTTPAdapter):
             else:
                 self._remove_host_header(request)
 
-        parse_result = urlparse.urlparse(request.url)
+        parse_result = urlparse(request.url)
         if parse_result.scheme == "http":
             if parse_result.port == 80:
                 request.headers["Host"] = parse_result.hostname
@@ -32,7 +37,7 @@ class HttpProxyAdapter(HTTPAdapter):
         host = request.headers.get("Host")
         if not host:
             return False
-        parse_result = urlparse.urlparse(request.url)
+        parse_result = urlparse(request.url)
         if parse_result.scheme == "https":
             if host == parse_result.netloc and parse_result.port is not None:
                 return True
@@ -46,8 +51,18 @@ class HttpProxyAdapter(HTTPAdapter):
             pass
 
     def add_headers(self, request, **kwargs):
+        logger.info("add_headers: before: %s", request.headers)
         super(HttpProxyAdapter, self).add_headers(request, **kwargs)
         self._add_host_header(request)
+        logger.info("add_headers: after: %s", request.headers)
+
+    def proxy_headers(self, proxy):
+        headers = super(HttpProxyAdapter, self).proxy_headers(proxy)
+        logger.info("proxy headers (before): %s", headers)
+        if self._user_agent and all(k.lower() != "user-agent" for k in headers):
+            headers["User-Agent"] = self._user_agent
+        logger.info("proxy headers (after): %s", headers)
+        return headers
 
 
 class HttpNtlmAdapter(HttpProxyAdapter):

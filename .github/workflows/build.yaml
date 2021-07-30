@@ -26,7 +26,6 @@ jobs:
         bandit -r requests_ntlm2
 
   test:
-    needs: [lint]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -44,15 +43,16 @@ jobs:
     - name: Test
       run: |
         pip install '.[testing]'
+        pip freeze
         python -m tests.test_server &> /dev/null &
-        py.test -xv --ignore=tests/functional/test_functional.py --ignore=tests/test_server.py --cov requests_ntlm2 --cov-report term-missing tests
+        pytest -xv --ignore=tests/functional/test_functional.py --ignore=tests/test_server.py --cov requests_ntlm2 --cov-report term-missing tests
 
     - name: Upload coverage report to Codecov
       uses: codecov/codecov-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
   publish:
-    needs: [test]
+    needs: [lint, test]
     name: Publish to PyPI
     runs-on: ubuntu-latest
 

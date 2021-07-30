@@ -45,7 +45,7 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         self.assertEqual(
             headers,
             (
-                "CONNECT {host}:{port} HTTP/1.0\r\n"
+                "CONNECT {host}:{port} HTTP/1.1\r\n"
                 "Host: {host}:{port}\r\n"
                 "Proxy-Authorization: {proxy_header}\r\n"
                 "Proxy-Connection: Keep-Alive\r\n"
@@ -65,7 +65,7 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         self.assertEqual(
             headers,
             (
-                "CONNECT {host}:{port} HTTP/1.0\r\n"
+                "CONNECT {host}:{port} HTTP/1.1\r\n"
                 "Host: {host}:{port}\r\n"
                 "Proxy-Connection: Keep-Alive\r\n"
                 "\r\n"

@@ -127,7 +127,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
 
     def _get_header_bytes(self, proxy_auth_header=None):
         host, port = self._get_hostport(self._tunnel_host, self._tunnel_port)
-        http_connect_string = "CONNECT {}:{} HTTP/1.0\r\n".format(host, port)
+        http_connect_string = "CONNECT {}:{} HTTP/1.1\r\n".format(host, port)
         logger.debug("> %r", http_connect_string)
         header_bytes = http_connect_string
         if proxy_auth_header:
