@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-version = "6.3.1"
+version = "0.0.6"
 url = "https://github.com/dopstar/requests-ntlm2"
 
 if "a" in version:
@@ -17,6 +17,7 @@ with open("README.md") as fd:
 
 
 requirements = [
+    "aenum",
     "requests>=2.0.0",
     "ntlm-auth>=1.0.2",
     "cryptography>=1.3",
@@ -55,9 +56,9 @@ setup(
     author_email="mmadlavana@gmail.com",
     url=url,
     project_urls={
-          'Documentation': 'https://dopstar.github.io/requests-ntlm2',
-          'Source': url,
-          'Tracker': '{}/issues'.format(url),
+        'Documentation': 'https://dopstar.github.io/requests-ntlm2',
+        'Source': url,
+        'Tracker': '{}/issues'.format(url),
     },
     download_url="{url}/archive/{version}.tar.gz".format(url=url, version=version),
     description=(
