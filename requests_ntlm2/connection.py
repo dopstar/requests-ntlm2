@@ -309,7 +309,7 @@ class VerifiedNonNtlmHTTPSConnection(_VerifiedHTTPSConnection):
 
         if code != 200:
             self.close()
-            logger.error('Tunnel connection failed: %d %s' % (code, message.strip()))
+            logger.error("Tunnel connection failed: %d %s" % (code, message.strip()))
             raise socket.error(
                 "Tunnel connection failed: %d %s" % (code, message.strip())
             )
@@ -323,7 +323,7 @@ class VerifiedNonNtlmHTTPSConnection(_VerifiedHTTPSConnection):
                 if line.decode("utf-8").lower().startswith("{}:".format(header)):
                     logger.info("< %r", line)
 
-        logger.info('Proxy tunnel successfully created')
+        logger.info("Proxy tunnel successfully created")
 
 
 try:

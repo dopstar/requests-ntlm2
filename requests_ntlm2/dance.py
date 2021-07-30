@@ -110,9 +110,9 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
 
         try:
             flags = NtlmFlags(ntlm_auth.messages.ChallengeMessage(challenge_msg).negotiate_flags)
-            logger.debug('challenge flags: %s', flags)
+            logger.debug("challenge flags: %s", flags)
         except Exception:
-            logger.exception('unable to check challenge flags; e=')
+            logger.exception("unable to check challenge flags; e=")
 
         if self.ntlm_strict_mode:
             self._challenge_token = challenge_msg
