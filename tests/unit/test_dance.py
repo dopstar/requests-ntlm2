@@ -1,61 +1,57 @@
 import base64
-import unittest
 
 import faker
 import mock
 import ntlm_auth.ntlm
+import pytest
 
 import requests_ntlm2
 import requests_ntlm2.core
 import requests_ntlm2.dance
 
 
-class TestHttpNtlmContext(unittest.TestCase):
-    def setUp(self):
-        self.fake = faker.Factory.create()
+class TestHttpNtlmContext(object):
+    fake = faker.Factory.create()
 
     def test__init(self):
         error_msg = 'Expected "NTLM" or "Negotiate" auth_type, got None'
-        with self.assertRaisesRegexp(ValueError, error_msg):
+        with pytest.raises(ValueError, match=error_msg):
             requests_ntlm2.dance.HttpNtlmContext("username", "password")
 
     def test__init__ntlm(self):
         username = self.fake.user_name()
         password = self.fake.password()
         ctx = requests_ntlm2.dance.HttpNtlmContext(username, password, auth_type="NTLM")
-        self.assertIsInstance(ctx, requests_ntlm2.dance.HttpNtlmContext)
-        self.assertIsInstance(ctx, ntlm_auth.ntlm.NtlmContext)
-        self.assertEqual(ctx._auth_type, "NTLM")
-        self.assertIsNone(ctx._challenge_token)
-        self.assertEqual(ctx.ntlm_compatibility, requests_ntlm2.NtlmCompatibility.NTLMv2_DEFAULT)
-        self.assertEqual(ctx.username, username)
-        self.assertEqual(ctx.password, password)
-        self.assertIsNone(ctx.domain)
-        self.assertIsNone(ctx.cbt_data)
+        assert isinstance(ctx, requests_ntlm2.dance.HttpNtlmContext)
+        assert isinstance(ctx, ntlm_auth.ntlm.NtlmContext)
+        assert ctx._auth_type == "NTLM"
+        assert ctx._challenge_token is None
+        assert ctx.ntlm_compatibility == requests_ntlm2.NtlmCompatibility.NTLMv2_DEFAULT
+        assert ctx.username == username
+        assert ctx.password == password
+        assert ctx.domain is None
+        assert ctx.cbt_data is None
 
     def test__init__negotiate(self):
         username = self.fake.user_name()
         password = self.fake.password()
         ctx = requests_ntlm2.dance.HttpNtlmContext(username, password, auth_type="Negotiate")
-        self.assertIsInstance(ctx, requests_ntlm2.dance.HttpNtlmContext)
-        self.assertIsInstance(ctx, ntlm_auth.ntlm.NtlmContext)
-        self.assertEqual(ctx._auth_type, "Negotiate")
-        self.assertIsNone(ctx._challenge_token)
-        self.assertEqual(ctx.ntlm_compatibility, requests_ntlm2.NtlmCompatibility.NTLMv2_DEFAULT)
-        self.assertEqual(ctx.username, username)
-        self.assertEqual(ctx.password, password)
-        self.assertIsNone(ctx.domain)
-        self.assertIsNone(ctx.cbt_data)
+        assert isinstance(ctx, requests_ntlm2.dance.HttpNtlmContext)
+        assert isinstance(ctx, ntlm_auth.ntlm.NtlmContext)
+        assert ctx._auth_type == "Negotiate"
+        assert ctx._challenge_token is None
+        assert ctx.ntlm_compatibility == requests_ntlm2.NtlmCompatibility.NTLMv2_DEFAULT
+        assert ctx.username == username
+        assert ctx.password == password
+        assert ctx.domain is None
+        assert ctx.cbt_data is None
 
     def test_get_negotiate_header(self):
         username = self.fake.user_name()
         password = self.fake.password()
         ctx = requests_ntlm2.dance.HttpNtlmContext(username, password, auth_type="NTLM")
         authenticate_header = ctx.get_negotiate_header()
-        self.assertEqual(
-            authenticate_header,
-            "NTLM TlRMTVNTUAABAAAAMYCI4gAAAAAoAAAAAAAAACgAAAAGAbEdAAAADw=="
-        )
+        assert  authenticate_header == "NTLM TlRMTVNTUAABAAAAMYCI4gAAAAAoAAAAAAAAACgAAAAGAbEdAAAADw=="  # noqa
 
     def test_get_authenticate_header(self):
         username = self.fake.user_name()
@@ -72,15 +68,15 @@ class TestHttpNtlmContext(unittest.TestCase):
         ctx.set_challenge_from_header(challenge)
 
         authenticate_header = ctx.get_authenticate_header()
-        self.assertTrue(authenticate_header.startswith("NTLM "))
+        assert authenticate_header.startswith("NTLM ")
         decoded_authenticate_data = base64.b64decode(authenticate_header.split()[1])
-        self.assertEqual(decoded_authenticate_data[:9], b"NTLMSSP\x00\x03")
+        assert decoded_authenticate_data[:9] == b"NTLMSSP\x00\x03"
 
     def test_set_challenge_from_header(self):
         username = self.fake.user_name()
         password = self.fake.password()
         ctx = requests_ntlm2.dance.HttpNtlmContext(username, password, auth_type="NTLM")
-        self.assertEqual(ctx._auth_type, "NTLM")
+        assert ctx._auth_type == "NTLM"
 
         challenge = (
             "NTLM TlRMTVNTUAACAAAAAAAAAAAAAAAyAojgAnH/LKem1bAAAA"
@@ -90,8 +86,7 @@ class TestHttpNtlmContext(unittest.TestCase):
             "MAAxADUALgBkAGUAdABuAHMAdwAuAHcAaQBuAAAAAAA="
         )
         ctx.set_challenge_from_header(challenge)
-        self.assertEqual(
-            ctx._challenge_token,
+        assert ctx._challenge_token == (
             b"NTLMSSP"
             b"\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x002\x02\x88\xe0\x02q\xff,"
             b"\xa7\xa6\xd5\xb0\x00\x00\x00\x00\x00\x00\x00\x00~\x00~\x008\x00\x00\x00\x05\x00"
@@ -106,7 +101,7 @@ class TestHttpNtlmContext(unittest.TestCase):
         username = self.fake.user_name()
         password = self.fake.password()
         ctx = requests_ntlm2.dance.HttpNtlmContext(username, password, auth_type="NTLM")
-        self.assertEqual(ctx._auth_type, "NTLM")
+        assert ctx._auth_type == "NTLM"
 
         challenge = (
             "WWW-Authenticate: NTLM TlRMTVNTUAACAAAAAAAAAAAAAAAyAojgAnH/LKem1bAAAA"
@@ -116,8 +111,7 @@ class TestHttpNtlmContext(unittest.TestCase):
             "MAAxADUALgBkAGUAdABuAHMAdwAuAHcAaQBuAAAAAAA="
         )
         ctx.set_challenge_from_header(challenge)
-        self.assertEqual(
-            ctx._challenge_token,
+        assert ctx._challenge_token == (
             b"NTLMSSP"
             b"\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x002\x02\x88\xe0\x02q\xff,"
             b"\xa7\xa6\xd5\xb0\x00\x00\x00\x00\x00\x00\x00\x00~\x00~\x008\x00\x00\x00\x05\x00"
@@ -132,7 +126,7 @@ class TestHttpNtlmContext(unittest.TestCase):
         username = self.fake.user_name()
         password = self.fake.password()
         ctx = requests_ntlm2.dance.HttpNtlmContext(username, password, auth_type="NTLM")
-        self.assertEqual(ctx._auth_type, "NTLM")
+        assert ctx._auth_type == "NTLM"
 
         challenge = (
             "Proxy-Authenticate: NTLM TlRMTVNTUAACAAAAAAAAAAAAAAAyAojgAnH/LKem1bAAAA"
@@ -142,8 +136,7 @@ class TestHttpNtlmContext(unittest.TestCase):
             "MAAxADUALgBkAGUAdABuAHMAdwAuAHcAaQBuAAAAAAA="
         )
         ctx.set_challenge_from_header(challenge)
-        self.assertEqual(
-            ctx._challenge_token,
+        assert ctx._challenge_token == (
             b"NTLMSSP"
             b"\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x002\x02\x88\xe0\x02q\xff,"
             b"\xa7\xa6\xd5\xb0\x00\x00\x00\x00\x00\x00\x00\x00~\x00~\x008\x00\x00\x00\x05\x00"
@@ -158,7 +151,7 @@ class TestHttpNtlmContext(unittest.TestCase):
         username = self.fake.user_name()
         password = self.fake.password()
         ctx = requests_ntlm2.dance.HttpNtlmContext(username, password, auth_type="NTLM")
-        self.assertEqual(ctx._auth_type, "NTLM")
+        assert ctx._auth_type == "NTLM"
 
         challenge = (
             "Proxy-Authenticate: NTLM2 TlRMTVNTUAACAAAAAAAAAAAAAAAyAojgAnH/LKem1bAAAA"
@@ -168,77 +161,77 @@ class TestHttpNtlmContext(unittest.TestCase):
             "MAAxADUALgBkAGUAdABuAHMAdwAuAHcAaQBuAAAAAAA="
         )
         ctx.set_challenge_from_header(challenge)
-        self.assertIsNone(ctx._challenge_token)
+        assert ctx._challenge_token is None
 
     def test_set_challenge_from_header__no_header(self):
         username = self.fake.user_name()
         password = self.fake.password()
         ctx = requests_ntlm2.dance.HttpNtlmContext(username, password, auth_type="NTLM")
-        self.assertEqual(ctx._auth_type, "NTLM")
+        assert ctx._auth_type == "NTLM"
 
         challenge = None
         ctx.set_challenge_from_header(challenge)
-        self.assertIsNone(ctx._challenge_token)
+        assert ctx._challenge_token is None
 
     def test_session_security(self):
         username = self.fake.user_name()
         password = self.fake.password()
         ctx = requests_ntlm2.dance.HttpNtlmContext(username, password, auth_type="NTLM")
-        self.assertIsNone(ctx.session_security)
-        self.assertIsNone(ctx._session_security)
+        assert ctx.session_security is None
+        assert ctx._session_security is None
 
         ctx._session_security = self.fake.pystr()
-        self.assertIsNotNone(ctx._session_security)
-        self.assertEqual(ctx.session_security, ctx._session_security)
+        assert ctx._session_security is not None
+        assert ctx.session_security == ctx._session_security
 
         ctx.session_security = None
-        self.assertIsNone(ctx.session_security)
-        self.assertIsNone(ctx._session_security)
+        assert ctx.session_security is None
+        assert ctx._session_security is None
 
     def test_challenge_message(self):
         username = self.fake.user_name()
         password = self.fake.password()
         ctx = requests_ntlm2.dance.HttpNtlmContext(username, password, auth_type="NTLM")
-        self.assertIsNone(ctx.challenge_message)
-        self.assertIsNone(ctx._challenge_message)
+        assert ctx.challenge_message is None
+        assert ctx._challenge_message is None
 
         ctx._challenge_message = self.fake.pystr()
-        self.assertIsNotNone(ctx._challenge_message)
-        self.assertEqual(ctx.challenge_message, ctx._challenge_message)
+        assert ctx._challenge_message is not None
+        assert ctx.challenge_message == ctx._challenge_message
 
         ctx.challenge_message = None
-        self.assertIsNone(ctx.challenge_message)
-        self.assertIsNone(ctx._challenge_message)
+        assert ctx.challenge_message is None
+        assert ctx._challenge_message is None
 
     def test_authenticate_message(self):
         username = self.fake.user_name()
         password = self.fake.password()
         ctx = requests_ntlm2.dance.HttpNtlmContext(username, password, auth_type="NTLM")
-        self.assertIsNone(ctx.authenticate_message)
-        self.assertIsNone(ctx._authenticate_message)
+        assert ctx.authenticate_message is None
+        assert ctx._authenticate_message is None
 
         ctx._authenticate_message = self.fake.pystr()
-        self.assertIsNotNone(ctx._authenticate_message)
-        self.assertEqual(ctx.authenticate_message, ctx._authenticate_message)
+        assert ctx._authenticate_message is not None
+        assert ctx.authenticate_message == ctx._authenticate_message
 
         ctx.authenticate_message = None
-        self.assertIsNone(ctx.authenticate_message)
-        self.assertIsNone(ctx._authenticate_message)
+        assert ctx.authenticate_message is None
+        assert ctx._authenticate_message is None
 
     def test_negotiate_message(self):
         username = self.fake.user_name()
         password = self.fake.password()
         ctx = requests_ntlm2.dance.HttpNtlmContext(username, password, auth_type="NTLM")
-        self.assertIsNone(ctx.negotiate_message)
-        self.assertIsNone(ctx._negotiate_message)
+        assert ctx.negotiate_message is None
+        assert ctx._negotiate_message is None
 
         ctx._negotiate_message = self.fake.pystr()
-        self.assertIsNotNone(ctx._negotiate_message)
-        self.assertEqual(ctx.negotiate_message, ctx._negotiate_message)
+        assert ctx._negotiate_message is not None
+        assert ctx.negotiate_message == ctx._negotiate_message
 
         ctx.negotiate_message = None
-        self.assertIsNone(ctx.negotiate_message)
-        self.assertIsNone(ctx._negotiate_message)
+        assert ctx.negotiate_message is None
+        assert ctx._negotiate_message is None
 
     def test_parse_challenge_message(self):
         username = self.fake.user_name()
@@ -251,7 +244,7 @@ class TestHttpNtlmContext(unittest.TestCase):
         )
         msg = "TlRMTVNTUAACAAAAAAAAAAAAAAAGgokAmuCpt5hD4IIAAAAAAAAAAAAAAAAAAAAA"
         ctx.parse_challenge_message(msg)
-        self.assertEqual(ctx._challenge_token, base64.b64decode(msg))
+        assert ctx._challenge_token == base64.b64decode(msg)
 
         ctx = requests_ntlm2.dance.HttpNtlmContext(
             username,
@@ -262,6 +255,6 @@ class TestHttpNtlmContext(unittest.TestCase):
         with mock.patch("requests_ntlm2.dance.fix_target_info") as mock_fix_target_info:
             mock_fix_target_info.return_value = b"uh-huh!"
             ctx.parse_challenge_message(msg)
-            self.assertNotEqual(ctx._challenge_token, base64.b64decode(msg))
+            assert ctx._challenge_token != base64.b64decode(msg)
             mock_fix_target_info.assert_called_once_with(base64.b64decode(msg))
             assert ctx._challenge_token == b"uh-huh!"

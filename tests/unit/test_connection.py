@@ -31,6 +31,7 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
 
     def tearDown(self):
         self.conn.clear_ntlm_auth_credentials()
+        self.conn.clear_http_version()
         self.conn.close()
 
     def test_init(self):
@@ -60,12 +61,63 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         )
         self.assertIsInstance(headers, bytes)
 
+    def test__get_header_bytes__http_1_1(self):
+        conn = VerifiedHTTPSConnection("srv-93.shaw.com", port=6789)
+        conn._tunnel_host = self.tunnel_host
+        conn._tunnel_port = self.tunnel_port
+        conn._tunnel_headers = {}
+        conn.set_http_version("HTTP/1.1")
+
+        proxy_auth_header = "Basic blablablablajhaskdfgjshd"
+        headers = conn._get_header_bytes(proxy_auth_header=proxy_auth_header)
+        self.assertEqual(
+            headers,
+            (
+                "CONNECT {host}:{port} HTTP/1.1\r\n"
+                "Host: {host}:{port}\r\n"
+                "Proxy-Authorization: {proxy_header}\r\n"
+                "Proxy-Connection: Keep-Alive\r\n"
+                "\r\n"
+            ).format(
+                proxy_header=proxy_auth_header,
+                host=self.tunnel_host,
+                port=self.tunnel_port
+            ).encode(
+                "latin1"
+            )
+        )
+        self.assertIsInstance(headers, bytes)
+
     def test__get_header_bytes__no_proxy_header(self):
         headers = self.conn._get_header_bytes()
         self.assertEqual(
             headers,
             (
                 "CONNECT {host}:{port} HTTP/1.0\r\n"
+                "Host: {host}:{port}\r\n"
+                "Proxy-Connection: Keep-Alive\r\n"
+                "\r\n"
+            ).format(
+                host=self.tunnel_host,
+                port=self.tunnel_port
+            ).encode(
+                "latin1"
+            )
+        )
+        self.assertIsInstance(headers, bytes)
+
+    def test__get_header_bytes__no_proxy_header__http_1_1(self):
+        conn = VerifiedHTTPSConnection("srv-93.shaw.com", port=6789)
+        conn._tunnel_host = self.tunnel_host
+        conn._tunnel_port = self.tunnel_port
+        conn._tunnel_headers = {}
+        conn.set_http_version("HTTP/1.1")
+
+        headers = conn._get_header_bytes()
+        self.assertEqual(
+            headers,
+            (
+                "CONNECT {host}:{port} HTTP/1.1\r\n"
                 "Host: {host}:{port}\r\n"
                 "Proxy-Connection: Keep-Alive\r\n"
                 "\r\n"
@@ -468,6 +520,28 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
                 assert result is None
                 mock_select.assert_called_once_with([response.fp], (), (), 0.1)
                 assert fd.read() == data
+
+    def test_set_http_version(self):
+        self.assertFalse(hasattr(self.conn, "_http_version"))
+        self.assertIsNone(self.conn.set_http_version("HTTP/1.0"))
+        self.assertTrue(hasattr(self.conn, "_http_version"))
+        self.assertEqual(self.conn._http_version, "HTTP/1.0")
+
+        self.assertIsNone(self.conn.set_http_version("HTTP/1.1"))
+        self.assertEqual(self.conn._http_version, "HTTP/1.1")
+
+        # check default for bogus value
+        for v in ("HTTP/1.2", None):
+            self.assertIsNone(self.conn.set_http_version(v))
+            self.assertEqual(self.conn._http_version, "HTTP/1.0")
+
+    def test_clear_http_version(self):
+        self.conn.set_http_version("HTTP/1.1")
+        self.assertTrue(hasattr(self.conn, "_http_version"))
+        self.assertEqual(self.conn._http_version, "HTTP/1.1")
+
+        self.conn.clear_http_version()
+        self.assertFalse(hasattr(self.conn, "_http_version"))
 
 
 def test_import_error():

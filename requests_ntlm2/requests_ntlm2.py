@@ -70,7 +70,7 @@ class HttpNtlmAuth(AuthBase):
 
         # Consume content and release the original connection
         # to allow our new request to reuse the same one.
-        response.content
+        _ = response.content
         response.raw.release_conn()
         request = response.request.copy()
 
@@ -98,7 +98,7 @@ class HttpNtlmAuth(AuthBase):
 
         # Consume content and release the original connection
         # to allow our new request to reuse the same one.
-        response2.content
+        _ = response2.content
         response2.raw.release_conn()
         request = response2.request.copy()
 
