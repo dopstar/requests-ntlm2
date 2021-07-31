@@ -51,17 +51,14 @@ class HttpProxyAdapter(HTTPAdapter):
             pass
 
     def add_headers(self, request, **kwargs):
-        logger.info("add_headers: before: %s", request.headers)
         super(HttpProxyAdapter, self).add_headers(request, **kwargs)
         self._add_host_header(request)
-        logger.info("add_headers: after: %s", request.headers)
 
     def proxy_headers(self, proxy):
         headers = super(HttpProxyAdapter, self).proxy_headers(proxy)
-        logger.info("proxy headers (before): %s", headers)
         if self._user_agent and all(k.lower() != "user-agent" for k in headers):
             headers["User-Agent"] = self._user_agent
-        logger.info("proxy headers (after): %s", headers)
+        logger.debug("proxy headers: %s", headers)
         return headers
 
 
