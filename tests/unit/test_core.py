@@ -40,11 +40,9 @@ class TestCoreFunctions(object):
 
         key = ntlm_auth.gss_channel_bindings.GssChannelBindingsStruct.APPLICATION_DATA
         assert cbt_data.fields[key] == b"tls-server-end-point:" + cert_bytes
-        assert (
-            cbt_data.get_data().startswith(
-                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0e\x05\x00\x00"
-                b"tls-server-end-point:"
-            ) is True
+        assert cbt_data.get_data().startswith(
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0e\x05\x00\x00"
+            b"tls-server-end-point:"
         )
 
     def test_get_ntlm_credentials(self):
