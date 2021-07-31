@@ -45,7 +45,7 @@ jobs:
       run: |
         pip install '.[testing]'
         python -m tests.test_server &> /dev/null &
-        py.test -xv --ignore=tests/functional/test_functional.py --ignore=tests/test_server.py --cov requests_ntlm2 --cov-report term-missing tests
+        pytest -xv --ignore=tests/functional/test_functional.py --ignore=tests/test_server.py --cov requests_ntlm2 --cov-report term-missing tests
 
     - name: Upload coverage report to Codecov
       uses: codecov/codecov-action@v1
