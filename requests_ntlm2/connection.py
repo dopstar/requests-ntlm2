@@ -147,7 +147,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         return version, code, message, response
 
     def _get_http_version(self):
-        if getattr(self, '_http_version', None):
+        if getattr(self, "_http_version", None):
             return self._http_version
         return DEFAULT_HTTP_VERSION
 
