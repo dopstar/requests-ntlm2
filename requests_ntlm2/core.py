@@ -181,7 +181,7 @@ def get_server_cert(response):
         try:
             server_certificate = socket.getpeercert(True)
         except AttributeError:
-            pass
+            logger.debug("unable to get server certificate")
         else:
             return get_certificate_hash_bytes(server_certificate)
     else:

@@ -38,6 +38,10 @@ _TRACKED_HEADERS = (
     "content-type",
 )
 
+HTTP_VERSION_11 = "HTTP/1.1"
+HTTP_VERSION_10 = "HTTP/1.0"
+DEFAULT_HTTP_VERSION = HTTP_VERSION_10
+
 
 class HTTPConnection(_HTTPConnection):
     pass
@@ -60,6 +64,23 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
     @classmethod
     def set_ntlm_auth_credentials(cls, username, password):
         cls._ntlm_credentials = get_ntlm_credentials(username, password)
+
+    @classmethod
+    def set_http_version(cls, http_version):
+        if http_version in (HTTP_VERSION_10, HTTP_VERSION_11):
+            cls._http_version = http_version
+        else:
+            logger.debug(
+                "unsupported http-version %r, setting the default %r",
+                http_version,
+                DEFAULT_HTTP_VERSION
+            )
+            cls._http_version = DEFAULT_HTTP_VERSION
+
+    @classmethod
+    def clear_http_version(cls):
+        cls._http_version = None
+        del cls._http_version
 
     @classmethod
     def clear_ntlm_auth_credentials(cls):
@@ -125,9 +146,18 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
             logger.debug("< %r", "{} {} {}".format(version, code, message))
         return version, code, message, response
 
+    def _get_http_version(self):
+        if getattr(self, '_http_version', None):
+            return self._http_version
+        return DEFAULT_HTTP_VERSION
+
     def _get_header_bytes(self, proxy_auth_header=None):
         host, port = self._get_hostport(self._tunnel_host, self._tunnel_port)
-        http_connect_string = "CONNECT {}:{} HTTP/1.1\r\n".format(host, port)
+        http_connect_string = "CONNECT {host}:{port} {http_version}\r\n".format(
+            host=host,
+            port=port,
+            http_version=self._get_http_version()
+        )
         logger.debug("> %r", http_connect_string)
         header_bytes = http_connect_string
         if proxy_auth_header:

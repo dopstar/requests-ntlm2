@@ -7,6 +7,7 @@ from six.moves.urllib.parse import urlparse
 
 from .connection import HTTPConnection as _HTTPConnection
 from .connection import HTTPSConnection as _HTTPSConnection
+from .connection import DEFAULT_HTTP_VERSION
 from .core import NtlmCompatibility
 
 
@@ -69,13 +70,20 @@ class HttpNtlmAdapter(HttpProxyAdapter):
         ntlm_password,
         ntlm_compatibility=NtlmCompatibility.NTLMv2_DEFAULT,
         ntlm_strict_mode=False,
+        proxy_tunnelling_http_version=DEFAULT_HTTP_VERSION,
         *args,
         **kwargs
     ):
         """
         Thin wrapper around requests.adapters.HTTPAdapter
         """
-        self._setup(ntlm_username, ntlm_password, ntlm_compatibility, ntlm_strict_mode)
+        self._setup(
+            ntlm_username,
+            ntlm_password,
+            ntlm_compatibility,
+            ntlm_strict_mode,
+            proxy_tunnelling_http_version
+        )
         super(HttpNtlmAdapter, self).__init__(*args, **kwargs)
 
     def close(self):
@@ -83,10 +91,14 @@ class HttpNtlmAdapter(HttpProxyAdapter):
         super(HttpNtlmAdapter, self).close()
 
     @staticmethod
-    def _setup(username, password, ntlm_compatibility, ntlm_strict_mode):
+    def _setup(username, password, ntlm_compatibility, ntlm_strict_mode, http_version):
         pool_classes_by_scheme["http"].ConnectionCls = _HTTPConnection
         pool_classes_by_scheme["https"].ConnectionCls = _HTTPSConnection
         _HTTPSConnection.set_ntlm_auth_credentials(username, password)
+
+        if http_version:
+            _HTTPSConnection.set_http_version(http_version)
+
         _HTTPSConnection.ntlm_compatibility = ntlm_compatibility
         _HTTPConnection.ntlm_strict_mode = ntlm_strict_mode
 
@@ -95,3 +107,4 @@ class HttpNtlmAdapter(HttpProxyAdapter):
         pool_classes_by_scheme["http"].ConnectionCls = HTTPConnection
         pool_classes_by_scheme["https"].ConnectionCls = HTTPSConnection
         _HTTPSConnection.clear_ntlm_auth_credentials()
+        _HTTPSConnection.clear_http_version()

@@ -79,14 +79,14 @@ class TestHttpProxyAdapter(object):
         mock_add_host_header.assert_called_once_with(request)
 
     @mock.patch("requests.adapters.HTTPAdapter.proxy_headers", return_value={'foo': 'bar'})
-    def test_add_headers(self, mock_proxy_headers):
+    def test_proxy_headers(self, mock_proxy_headers):
         adapter = requests_ntlm2.adapters.HttpProxyAdapter()
         request = requests.Request(url="http://github.com:80")
         assert adapter.proxy_headers({}) == {"foo": "bar"}
         mock_proxy_headers.assert_called_once_with({})
 
     @mock.patch("requests.adapters.HTTPAdapter.proxy_headers", return_value={'foo': 'bar'})
-    def test_add_headers__with_user_agent(self, mock_proxy_headers):
+    def test_proxy_headers__with_user_agent(self, mock_proxy_headers):
         adapter = requests_ntlm2.adapters.HttpProxyAdapter(user_agent='fake-ua/1.0')
         request = requests.Request(url="http://github.com:80")
         assert adapter.proxy_headers({"this": "that"}) == {
@@ -104,8 +104,23 @@ class TestHttpNtlmAdapter(object):
         assert isinstance(adapter, requests_ntlm2.adapters.HttpNtlmAdapter)
         assert isinstance(adapter, requests_ntlm2.adapters.HttpProxyAdapter)
         assert isinstance(adapter, requests.adapters.HTTPAdapter)
-        mock_setup.assert_called_once_with("username", "password", 3, False)
+        mock_setup.assert_called_once_with("username", "password", 3, False, "HTTP/1.0")
         mock_teardown.assert_not_called()
+
+    @mock.patch("requests_ntlm2.adapters.HttpNtlmAdapter._teardown")
+    @mock.patch("requests_ntlm2.adapters.HttpNtlmAdapter._setup")
+    def test_init__http_version(self, mock_setup, mock_teardown):
+        adapter = requests_ntlm2.adapters.HttpNtlmAdapter(
+            "username",
+            "password",
+            proxy_tunnelling_http_version="HTTP/1.1"
+        )
+        assert isinstance(adapter, requests_ntlm2.adapters.HttpNtlmAdapter)
+        assert isinstance(adapter, requests_ntlm2.adapters.HttpProxyAdapter)
+        assert isinstance(adapter, requests.adapters.HTTPAdapter)
+        mock_setup.assert_called_once_with("username", "password", 3, False, "HTTP/1.1")
+        mock_teardown.assert_not_called()
+
 
     @mock.patch("requests_ntlm2.adapters.HttpNtlmAdapter._teardown")
     @mock.patch("requests_ntlm2.adapters.HttpNtlmAdapter._setup")
@@ -118,7 +133,7 @@ class TestHttpNtlmAdapter(object):
         assert isinstance(adapter, requests_ntlm2.adapters.HttpNtlmAdapter)
         assert isinstance(adapter, requests_ntlm2.adapters.HttpProxyAdapter)
         assert isinstance(adapter, requests.adapters.HTTPAdapter)
-        mock_setup.assert_called_once_with("username", "password", 3, True)
+        mock_setup.assert_called_once_with("username", "password", 3, True, "HTTP/1.0")
         mock_teardown.assert_not_called()
 
     @mock.patch("requests_ntlm2.adapters.HttpNtlmAdapter._teardown")
@@ -129,11 +144,13 @@ class TestHttpNtlmAdapter(object):
         mock_setup.assert_called_once_with("username", "password", 3)
         mock_teardown.assert_called_once()
 
+    @mock.patch("requests_ntlm2.connection.HTTPSConnection.set_http_version")
     @mock.patch("requests_ntlm2.connection.HTTPSConnection.set_ntlm_auth_credentials")
-    def test__setup(self, mock_set_ntlm_auth_credentials):
+    def test__setup(self, mock_set_ntlm_auth_credentials, mock_set_http_version):
         from requests.packages.urllib3.poolmanager import pool_classes_by_scheme
         adapter = requests_ntlm2.adapters.HttpNtlmAdapter("username", "password")
         mock_set_ntlm_auth_credentials.assert_called_once_with("username", "password")
+        mock_set_http_version.assert_called_once_with("HTTP/1.0")
 
         http_conn_cls = pool_classes_by_scheme["http"].ConnectionCls
         https_conn_cls = pool_classes_by_scheme["https"].ConnectionCls
@@ -141,12 +158,39 @@ class TestHttpNtlmAdapter(object):
         assert https_conn_cls is requests_ntlm2.connection.HTTPSConnection
         adapter.close()
 
+    @mock.patch("requests_ntlm2.connection.HTTPSConnection.set_http_version")
+    @mock.patch("requests_ntlm2.connection.HTTPSConnection.set_ntlm_auth_credentials")
+    def test__setup__http_version(self, mock_set_ntlm_auth_credentials, mock_set_http_version):
+        from requests.packages.urllib3.poolmanager import pool_classes_by_scheme
+        adapter = requests_ntlm2.adapters.HttpNtlmAdapter(
+            "username",
+            "password",
+            proxy_tunnelling_http_version="HTTP/1.1"
+        )
+        mock_set_ntlm_auth_credentials.assert_called_once_with("username", "password")
+        mock_set_http_version.assert_called_once_with("HTTP/1.1")
+
+        http_conn_cls = pool_classes_by_scheme["http"].ConnectionCls
+        https_conn_cls = pool_classes_by_scheme["https"].ConnectionCls
+        assert http_conn_cls is requests_ntlm2.connection.HTTPConnection
+        assert https_conn_cls is requests_ntlm2.connection.HTTPSConnection
+        adapter.close()
+
+    @mock.patch("requests_ntlm2.connection.HTTPSConnection.clear_http_version")
+    @mock.patch("requests_ntlm2.connection.HTTPSConnection.set_http_version")
     @mock.patch("requests_ntlm2.connection.HTTPSConnection.clear_ntlm_auth_credentials")
     @mock.patch("requests_ntlm2.connection.HTTPSConnection.set_ntlm_auth_credentials")
-    def test_close(self, set_ntlm_auth_credentials, clear_ntlm_auth_credentials):
+    def test_close(
+            self,
+            set_ntlm_auth_credentials,
+            clear_ntlm_auth_credentials,
+            set_http_version,
+            clear_http_version
+    ):
         from requests.packages.urllib3.poolmanager import pool_classes_by_scheme
         adapter = requests_ntlm2.adapters.HttpNtlmAdapter("username2", "password")
         set_ntlm_auth_credentials.assert_called_once_with("username2", "password")
+        set_http_version.assert_called_once_with("HTTP/1.0")
 
         http_conn_cls = pool_classes_by_scheme["http"].ConnectionCls
         https_conn_cls = pool_classes_by_scheme["https"].ConnectionCls
@@ -155,6 +199,7 @@ class TestHttpNtlmAdapter(object):
 
         adapter.close()
         clear_ntlm_auth_credentials.assert_called_once()
+        clear_http_version.assert_called_once_with()
         http_conn_cls = pool_classes_by_scheme["http"].ConnectionCls
         https_conn_cls = pool_classes_by_scheme["https"].ConnectionCls
         assert http_conn_cls is HTTPConnection
