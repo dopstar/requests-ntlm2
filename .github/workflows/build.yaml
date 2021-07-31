@@ -43,6 +43,7 @@ jobs:
     - name: Test
       run: |
         pip install '.[testing]'
+        pip freeze
         python -m tests.test_server &> /dev/null &
         pytest -xv --ignore=tests/functional/test_functional.py --ignore=tests/test_server.py --cov requests_ntlm2 --cov-report term-missing tests
 
