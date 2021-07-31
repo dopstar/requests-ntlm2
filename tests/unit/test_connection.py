@@ -69,7 +69,7 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         conn.set_http_version("HTTP/1.1")
 
         proxy_auth_header = "Basic blablablablajhaskdfgjshd"
-        headers =conn._get_header_bytes(proxy_auth_header=proxy_auth_header)
+        headers = conn._get_header_bytes(proxy_auth_header=proxy_auth_header)
         self.assertEqual(
             headers,
             (

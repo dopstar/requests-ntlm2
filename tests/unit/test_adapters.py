@@ -81,14 +81,12 @@ class TestHttpProxyAdapter(object):
     @mock.patch("requests.adapters.HTTPAdapter.proxy_headers", return_value={'foo': 'bar'})
     def test_proxy_headers(self, mock_proxy_headers):
         adapter = requests_ntlm2.adapters.HttpProxyAdapter()
-        request = requests.Request(url="http://github.com:80")
         assert adapter.proxy_headers({}) == {"foo": "bar"}
         mock_proxy_headers.assert_called_once_with({})
 
     @mock.patch("requests.adapters.HTTPAdapter.proxy_headers", return_value={'foo': 'bar'})
     def test_proxy_headers__with_user_agent(self, mock_proxy_headers):
         adapter = requests_ntlm2.adapters.HttpProxyAdapter(user_agent='fake-ua/1.0')
-        request = requests.Request(url="http://github.com:80")
         assert adapter.proxy_headers({"this": "that"}) == {
             "foo": "bar",
             "User-Agent": "fake-ua/1.0"
@@ -120,7 +118,6 @@ class TestHttpNtlmAdapter(object):
         assert isinstance(adapter, requests.adapters.HTTPAdapter)
         mock_setup.assert_called_once_with("username", "password", 3, False, "HTTP/1.1")
         mock_teardown.assert_not_called()
-
 
     @mock.patch("requests_ntlm2.adapters.HttpNtlmAdapter._teardown")
     @mock.patch("requests_ntlm2.adapters.HttpNtlmAdapter._setup")
