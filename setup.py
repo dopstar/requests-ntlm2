@@ -33,7 +33,7 @@ testing_requirements = [
     "coverage",
     "mock",
     "faker",
-    "trustme",
+    "trustme==0.7.0",
 ]
 
 linting_requirements = [
