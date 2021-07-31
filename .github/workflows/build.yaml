@@ -26,7 +26,6 @@ jobs:
         bandit -r requests_ntlm2
 
   test:
-    needs: [lint]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -52,7 +51,7 @@ jobs:
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
   publish:
-    needs: [test]
+    needs: [lint, test]
     name: Publish to PyPI
     runs-on: ubuntu-latest
 
