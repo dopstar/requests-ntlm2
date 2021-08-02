@@ -5,7 +5,7 @@ import sys
 import warnings
 
 import ntlm_auth.constants
-from aenum import IntFlag
+from aenum import IntFlag, extend_enum
 from cryptography import x509
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
@@ -124,30 +124,39 @@ class NtlmFlags(IntFlag):
     # used in the calculation of the NTLMv2 response.
     NEGOTIATE_TARGET_INFO = 0x00800000
 
+
+_DYNAMIC_NTLM_FLAGS = {
     # This flag's usage has not been identified.
-    UNKNOWN_3 = 0x01000000
+    "UNKNOWN_3": 0x01000000,
 
     # This flag's usage has not been identified.
-    UNKNOWN_4 = 0x02000000
+    "UNKNOWN_4": 0x02000000,
 
     # This flag's usage has not been identified.
-    UNKNOWN_5 = 0x04000000
+    "UNKNOWN_5": 0x04000000,
 
     # This flag's usage has not been identified.
-    UNKNOWN_6 = 0x08000000
+    "UNKNOWN_6": 0x08000000,
 
     # This flag's usage has not been identified.
-    UNKNOWN_7 = 0x10000000
+    "UNKNOWN_7": 0x10000000,
 
     # Indicates that 128-bit encryption is supported.
-    NEGOTIATE_128 = 0x20000000
+    "NEGOTIATE_128": 0x20000000,
 
     # Indicates that the client will provide an encrypted master key in
     # the "Session Key" field of the Type 3 message.
-    NEGOTIATE_KEY_EXCHANGE = 0x40000000
+    "NEGOTIATE_KEY_EXCHANGE": 0x40000000,
 
-    #  	Indicates that 56-bit encryption is supported.
-    NEGOTIATE_56 = 0x80000000
+    # Indicates that 56-bit encryption is supported.
+    "NEGOTIATE_56": 0x80000000
+}
+
+for k, v in _DYNAMIC_NTLM_FLAGS.items():
+    try:
+        extend_enum(NtlmFlags, k, v)
+    except OverflowError:
+        logger.warning("not defining '%s.%s' enum member because its beyond maxint")
 
 
 class UnknownSignatureAlgorithmOID(Warning):
