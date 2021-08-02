@@ -148,11 +148,11 @@ _DYNAMIC_NTLM_FLAGS = {
     # the "Session Key" field of the Type 3 message.
     "NEGOTIATE_KEY_EXCHANGE": 0x40000000,
 
-    #  	Indicates that 56-bit encryption is supported.
+    # Indicates that 56-bit encryption is supported.
     "NEGOTIATE_56": 0x80000000
 }
 
-for k, v in _DYNAMIC_NTLM_FLAGS:
+for k, v in _DYNAMIC_NTLM_FLAGS.items():
     try:
         extend_enum(NtlmFlags, k, v)
     except OverflowError:
