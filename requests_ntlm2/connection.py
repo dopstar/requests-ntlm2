@@ -87,23 +87,21 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         cls._ntlm_credentials = None
         del cls._ntlm_credentials
 
-    def _is_line_blank(self, line):
+    @staticmethod
+    def _is_line_blank(line):
         # for sites which EOF without sending a trailer
         if not line or line in (b"\r\n", b"\n", b""):
-            last_line_is_blank = True
-        else:
-            last_line_is_blank = False
-        return last_line_is_blank
+            return True
+        return False
 
-    def _read_response_line_if_ready(self, response):
+    @staticmethod
+    def _read_response_line_if_ready(response):
         (ready, _, _) = select.select([response.fp], (), (), IO_WAIT_TIMEOUT)
         if ready:
-            line = response.fp.readline()
-        else:
-            line = None
-        return line
+            return response.fp.readline()
 
-    def _flush_response_buffer(self, response):
+    @staticmethod
+    def _flush_response_buffer(response):
         (ready, _, _) = select.select([response.fp], (), (), IO_WAIT_TIMEOUT)
         if ready:
             response.fp.read()
@@ -178,10 +176,18 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         logger.debug("attempting to open tunnel using HTTP CONNECT")
         logger.debug("username: %s, domain: %s", username, domain)
 
+        try:
+            workstation = socket.gethostname().upper()
+        except (AttributeError, TypeError, ValueError):
+            workstation = None
+
+        logger.debug("workstation: %s", workstation)
+
         ntlm_context = HttpNtlmContext(
             username,
             password,
             domain=domain,
+            workstation=workstation,
             auth_type="NTLM",
             ntlm_compatibility=self.ntlm_compatibility,
             ntlm_strict_mode=self.ntlm_strict_mode
@@ -195,22 +201,10 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         if code == PROXY_AUTHENTICATION_REQUIRED:
             authenticate_hdr = None
             match_string = "Proxy-Authenticate: NTLM "
-            last_line_is_blank = False
             while True:
-                if last_line_is_blank:
-                    line = self._read_response_line_if_ready(response)
-                else:
-                    line = response.fp.readline()
-                this_line_is_blank = self._is_line_blank(line)
-                if last_line_is_blank and this_line_is_blank:
-                    self._flush_response_buffer(response)
+                line = response.fp.readline()
+                if self._is_line_blank(line):
                     break
-
-                if this_line_is_blank:
-                    last_line_is_blank = True
-                    continue
-                else:
-                    last_line_is_blank = False
 
                 if line.decode("utf-8").startswith(match_string):
                     logger.debug("< %r", line)
