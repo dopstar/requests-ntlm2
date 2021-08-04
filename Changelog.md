@@ -1,3 +1,7 @@
+#### 6.4.2 - 04 Aug 2021
+ - fix regression issue introduced in https://github.com/dopstar/requests-ntlm2/pull/21
+ - include `workstation` name (ie hostname) in the NTLM dance
+
 #### 6.4.1 - 02 Aug 2021
  - fix python2 max-int bug introduced by version 6.4.0
 

@@ -28,7 +28,7 @@ class NtlmCompatibility(object):
     NTLMv2_LEVEL5 = 5
 
 
-class NtlmFlags(IntFlag):
+class NegotiateFlags(IntFlag):
     # Indicates that Unicode strings are supported for use
     # in security buffer data.
     NEGOTIATE_UNICODE = 0x00000001
@@ -154,7 +154,7 @@ _DYNAMIC_NTLM_FLAGS = {
 
 for k, v in _DYNAMIC_NTLM_FLAGS.items():
     try:
-        extend_enum(NtlmFlags, k, v)
+        extend_enum(NegotiateFlags, k, v)
     except OverflowError:
         logger.warning("not defining '%s.%s' enum member because its beyond maxint")
 

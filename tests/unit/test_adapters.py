@@ -78,15 +78,15 @@ class TestHttpProxyAdapter(object):
         assert adapter.add_headers(request) is None
         mock_add_host_header.assert_called_once_with(request)
 
-    @mock.patch("requests.adapters.HTTPAdapter.proxy_headers", return_value={'foo': 'bar'})
+    @mock.patch("requests.adapters.HTTPAdapter.proxy_headers", return_value={"foo": "bar"})
     def test_proxy_headers(self, mock_proxy_headers):
         adapter = requests_ntlm2.adapters.HttpProxyAdapter()
         assert adapter.proxy_headers({}) == {"foo": "bar"}
         mock_proxy_headers.assert_called_once_with({})
 
-    @mock.patch("requests.adapters.HTTPAdapter.proxy_headers", return_value={'foo': 'bar'})
+    @mock.patch("requests.adapters.HTTPAdapter.proxy_headers", return_value={"foo": "bar"})
     def test_proxy_headers__with_user_agent(self, mock_proxy_headers):
-        adapter = requests_ntlm2.adapters.HttpProxyAdapter(user_agent='fake-ua/1.0')
+        adapter = requests_ntlm2.adapters.HttpProxyAdapter(user_agent="fake-ua/1.0")
         assert adapter.proxy_headers({"this": "that"}) == {
             "foo": "bar",
             "User-Agent": "fake-ua/1.0"
