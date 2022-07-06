@@ -156,7 +156,7 @@ for k, v in _DYNAMIC_NTLM_FLAGS.items():
     try:
         extend_enum(NegotiateFlags, k, v)
     except OverflowError:
-        logger.warning("not defining '%s.%s' enum member because its beyond maxint")
+        logger.debug("not defining 'NegotiateFlags.%s' enum member because it is beyond maxint", k)
 
 
 class UnknownSignatureAlgorithmOID(Warning):
@@ -232,7 +232,7 @@ def get_auth_type_from_header(header):
     """
     Given a WWW-Authenticate or Proxy-Authenticate header, returns the
     authentication type to use. We prefer NTLM over Negotiate if the server
-    suppports it.
+    supports it.
     """
     if "ntlm" in header.lower():
         return "NTLM"
