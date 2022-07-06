@@ -1,3 +1,6 @@
+#### [6.4.3](https://github.com/dopstar/requests-ntlm2/releases/tag/6.4.3) - 06 Jul 2022
+ - fix regression issue introduced in https://github.com/dopstar/requests-ntlm2/pull/30
+
 #### [6.4.2](https://github.com/dopstar/requests-ntlm2/releases/tag/6.4.2) - 04 Aug 2021
  - fix regression issue introduced in https://github.com/dopstar/requests-ntlm2/pull/21
  - include `workstation` name (ie hostname) in the NTLM dance

@@ -90,7 +90,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
     @staticmethod
     def _is_line_blank(line):
         # for sites which EOF without sending a trailer
-        if not line or line in (b"\r\n", b"\n", b""):
+        if not line or line in (b"\r\n", b"\n", b"") or not line.strip():
             return True
         return False
 
@@ -173,15 +173,15 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
 
     def _tunnel(self):
         username, password, domain = self._ntlm_credentials
-        logger.debug("attempting to open tunnel using HTTP CONNECT")
-        logger.debug("username: %s, domain: %s", username, domain)
+        logger.debug("* attempting to open tunnel using HTTP CONNECT")
+        logger.debug("* username=%r, domain=%r", username, domain)
 
         try:
             workstation = socket.gethostname().upper()
         except (AttributeError, TypeError, ValueError):
             workstation = None
 
-        logger.debug("workstation: %s", workstation)
+        logger.debug("* workstation=%r", workstation)
 
         ntlm_context = HttpNtlmContext(
             username,
@@ -201,10 +201,22 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         if code == PROXY_AUTHENTICATION_REQUIRED:
             authenticate_hdr = None
             match_string = "Proxy-Authenticate: NTLM "
+            last_line_is_blank = False
             while True:
-                line = response.fp.readline()
-                if self._is_line_blank(line):
+                if last_line_is_blank:
+                    line = self._read_response_line_if_ready(response)
+                else:
+                    line = response.fp.readline()
+                this_line_is_blank = self._is_line_blank(line)
+                if last_line_is_blank and this_line_is_blank:
+                    self._flush_response_buffer(response)
                     break
+
+                if this_line_is_blank:
+                    last_line_is_blank = True
+                    continue
+                else:
+                    last_line_is_blank = False
 
                 if line.decode("utf-8").startswith(match_string):
                     logger.debug("< %r", line)
