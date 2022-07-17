@@ -1,3 +1,6 @@
+#### [6.4.4](https://github.com/dopstar/requests-ntlm2/releases/tag/6.4.4) - 17 Jul 2022
+ - add python 3.10 support
+
 #### [6.4.3](https://github.com/dopstar/requests-ntlm2/releases/tag/6.4.3) - 06 Jul 2022
  - fix regression issue introduced in https://github.com/dopstar/requests-ntlm2/pull/30
 

@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-version = "6.4.3"
+version = "6.4.4"
 url = "https://github.com/dopstar/requests-ntlm2"
 
 if "a" in version:
@@ -80,6 +80,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "License :: OSI Approved :: ISC License (ISCL)",
         "Operating System :: MacOS",
         "Operating System :: POSIX :: Linux",
