@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-version = "6.4.4"
+version = "6.5.0"
 url = "https://github.com/dopstar/requests-ntlm2"
 
 if "a" in version:
@@ -17,7 +17,6 @@ with open("README.md") as fd:
 
 
 requirements = [
-    "aenum",
     "requests>=2.0.0",
     "ntlm-auth>=1.0.2",
     "cryptography>=1.3",
@@ -40,7 +39,8 @@ linting_requirements = [
     "flake8",
     "bandit==1.6.2; python_version == '2.7'",
     "bandit; python_version != '2.7'",
-    "flake8-isort",
+    "flake8-isort==4.1.1; python_version == '2.7'",
+    "flake8-isort; python_version != '2.7'",
     "flake8-quotes",
 ]
 

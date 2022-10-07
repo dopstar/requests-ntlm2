@@ -4,7 +4,7 @@ import logging
 import ntlm_auth.messages
 import ntlm_auth.ntlm
 
-from .core import NegotiateFlags, NtlmCompatibility, fix_target_info
+from .core import NtlmCompatibility, fix_target_info
 
 
 logger = logging.getLogger(__name__)
@@ -107,14 +107,6 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
 
     def parse_challenge_message(self, msg2):
         challenge_msg = base64.b64decode(msg2)
-
-        try:
-            flags = NegotiateFlags(
-                ntlm_auth.messages.ChallengeMessage(challenge_msg).negotiate_flags
-            )
-            logger.debug("challenge flags: %s", flags)
-        except Exception:
-            logger.exception("unable to check challenge flags; e=")
 
         if self.ntlm_strict_mode:
             self._challenge_token = challenge_msg

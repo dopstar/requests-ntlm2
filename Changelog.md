@@ -1,3 +1,6 @@
+#### [6.5.0](https://github.com/dopstar/requests-ntlm2/releases/tag/6.4.4) - 07 Oct 2022
+ - use Content-Length response header to drain the response socket - https://github.com/dopstar/requests-ntlm2/pull/36
+
 #### [6.4.4](https://github.com/dopstar/requests-ntlm2/releases/tag/6.4.4) - 17 Jul 2022
  - add python 3.10 support
 
