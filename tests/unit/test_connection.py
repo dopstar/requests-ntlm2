@@ -472,55 +472,6 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
                 assert line is None
                 mock_select.assert_called_once_with([response.fp], (), (), 0.1)
 
-    def test__flush_response_buffer(self):
-        data = (
-            b"<!DOCTYPE html>\r\n"
-            b"<html class='#{theme}' lang='en'>\r\n"
-            b"<head data-theme='#{theme}' data-revision='865b887'>\r\n"
-            b"<meta charset='utf-8'/>\r\n"
-            b"<meta http-equiv='X-UA-Compatible' content='IE=edge'/>\r\n"
-            b"<meta name='viewport' content='width=device-width, initial-scale=1'/>\r\n"
-            b"<base/>\r\n"
-            b"<title>401 Unauthorised</title><!--[if lt IE 9]>\r\n"
-            b"<script src=\'https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js\' type=\'text/javascript\' />\r\n"  # noqa
-            b"<script src=\'https://oss.maxcdn.com/respond/1.4.2/respond.min.js\' type=\'text/javascript\' />\r\n"  # noqa
-            b"<![endif]-->\r\n"
-            b"<script type='text/javascript'>\r\n"
-            b"function showURL()\r\n"
-            b"{\r\n"
-            b"document.write('<a href=\"mailto:itweb-admin@abc.def.com?subject=Proxy Authentication\">EDConnect</a>');\r\n"  # noqa
-            b"}\r\n"
-            b"\r\n"
-            b"function URL()\r\n"
-            b"{\r\n"
-            b"document.write(document.URL);\r\n"
-            b"}\r\n"
-            b"</script>\r\n"
-            b"<style media='screen'>\r\n"
-            b"</div>\r\n"
-            b"</div>\r\n"
-            b"</div>\r\n"
-            b"</aside></body>\r\n"
-            b"</html>\r\n"
-        )
-        with tempfile.TemporaryFile() as fd:
-            fd.write(data)
-            fd.seek(0)
-            response = type("Response", (), dict(fp=fd))
-            result = self.conn._flush_response_buffer(response)
-            assert result is None
-            assert fd.read() == b""
-
-        with tempfile.TemporaryFile() as fd:
-            fd.write(data)
-            fd.seek(0)
-            response = type("Response", (), dict(fp=fd))
-            with mock.patch("select.select", return_value=((), (), ())) as mock_select:
-                result = self.conn._flush_response_buffer(response)
-                assert result is None
-                mock_select.assert_called_once_with([response.fp], (), (), 0.1)
-                assert fd.read() == data
-
     def test_set_http_version(self):
         self.assertFalse(hasattr(self.conn, "_http_version"))
         self.assertIsNone(self.conn.set_http_version("HTTP/1.0"))

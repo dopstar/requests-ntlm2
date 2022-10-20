@@ -1,4 +1,7 @@
-#### [6.5.0](https://github.com/dopstar/requests-ntlm2/releases/tag/6.4.4) - 07 Oct 2022
+#### [6.5.1](https://github.com/dopstar/requests-ntlm2/releases/tag/6.5.1) - 20 Oct 2022
+ - be more defensive while parsing the response HTML during proxy tunnelling - https://github.com/dopstar/requests-ntlm2/pull/37
+
+#### [6.5.0](https://github.com/dopstar/requests-ntlm2/releases/tag/6.5.0) - 07 Oct 2022
  - use Content-Length response header to drain the response socket - https://github.com/dopstar/requests-ntlm2/pull/36
 
 #### [6.4.4](https://github.com/dopstar/requests-ntlm2/releases/tag/6.4.4) - 17 Jul 2022

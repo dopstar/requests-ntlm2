@@ -100,12 +100,6 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         if ready:
             return response.fp.readline()
 
-    @staticmethod
-    def _flush_response_buffer(response):
-        (ready, _, _) = select.select([response.fp], (), (), IO_WAIT_TIMEOUT)
-        if ready:
-            response.fp.read()
-
     def handle_http09_response(self, response):
         status_line_regex = re.compile(
             br"(?P<version>HTTP/\d\.\d)\s+(?P<status>\d+)\s+(?P<message>.+)",
@@ -214,7 +208,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                     previous_line = line
                     continue
                 else:
-                    if body_length is not None:
+                    if line is not None and body_length is not None:
                         body_length += len(line)
 
                     logger.debug(
@@ -249,7 +243,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                         if self._is_line_blank(line):
                             break
 
-                if line.decode("utf-8").startswith(match_string):
+                if line is not None and line.decode("utf-8").startswith(match_string):
                     # we handle the NTLM challenge message
                     logger.debug("< %r", line)
                     line = line.decode("utf-8")
@@ -258,7 +252,10 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                     authenticate_hdr = ntlm_context.get_authenticate_header()
                     logger.debug("* authenticate header: %r", authenticate_hdr)
                     continue
-                elif line.decode("utf-8").startswith(content_length_match_string):
+                elif (
+                    line is not None
+                    and line.decode("utf-8").startswith(content_length_match_string)
+                ):
                     # we handle the Content-Length header
                     logger.info("< %r", line)
                     line = line.decode("utf-8")
@@ -269,7 +266,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                     except (ValueError, TypeError):
                         pass
 
-                if len(line) > _MAXLINE:
+                if line is not None and len(line) > _MAXLINE:
                     raise LineTooLong("header line")
 
                 logger.debug("< %r", line)
@@ -287,7 +284,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
             )
         while self._continue_reading_headers:
             line = response.fp.readline()
-            if len(line) > _MAXLINE:
+            if line is not None and len(line) > _MAXLINE:
                 raise LineTooLong("header line")
             if self._is_line_blank(line):
                 break
