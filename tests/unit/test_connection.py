@@ -139,6 +139,7 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
     @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection.send")
     def test__tunnel__line_too_long(self, mock_send, mock_get_response, mock_select):
         fp = BytesIO(
+            b"Info: x%s\r\n"
             b"Proxy-Authenticate: NTLM TlRMTVNTUAACAAAABgAGADgAAAAGgokAyYpGWqVMA/QAAAAAAAAA"
             b"AH4AfgA+AAAABQCTCAAAAA9ERVROU1cCAAwARABFAFQATgBTAFcAAQAaAFMARwAtADQAOQAxADMAM"
             b"wAwADAAMAAwADkABAAUAEQARQBUAE4AUwBXAC4AVwBJAE4AAwAwAHMAZwAtADQAOQAxADMAMwAwAD"
@@ -146,7 +147,6 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
             b"Connection: Keep-Alive\r\n"
             b"Proxy-Connection: Keep-Alive\r\n"
             b"Server: nginx\r\n"
-            b"Info: x%s\r\n"
             b"\r\n"
             b"this is the body\r\n"
             b"\r\n" % (b"x" * _MAXLINE)

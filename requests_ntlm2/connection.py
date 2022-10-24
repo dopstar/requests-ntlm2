@@ -100,6 +100,17 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         if ready:
             return response.fp.readline()
 
+    def _flush_response_buffer(self, response):
+        line_count = 0
+        while True:
+            line_count += 1
+            logger.debug("* reading line from response buffer")
+            line = self._read_response_line_if_ready(response)
+            logger.debug("< line %s: %r", line_count, line)
+            if line is None or line in ("", b""):
+                logger.debug("* finished draining the socket")
+                break
+
     def handle_http09_response(self, response):
         status_line_regex = re.compile(
             br"(?P<version>HTTP/\d\.\d)\s+(?P<status>\d+)\s+(?P<message>.+)",
@@ -189,95 +200,56 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
 
         negotiate_header = ntlm_context.get_negotiate_header()
         header_bytes = self._get_header_bytes(proxy_auth_header=negotiate_header)
+        logger.debug("* sending the NEGOTIATE message")
         self.send(header_bytes)
         version, code, message, response = self._get_response()
 
         if code == PROXY_AUTHENTICATION_REQUIRED:
             authenticate_hdr = None
             match_string = "Proxy-Authenticate: NTLM "
-            content_length_match_string = "Content-Length:"
-            previous_line = None
-            content_length_header = None
-            body_length = None
+            last_line_is_blank = False
+            line_count = 1
             while True:
-                line = self._read_response_line_if_ready(response)
+                line_count += 1
+                logger.debug("* reading line number %s", line_count)
+                if last_line_is_blank:
+                    line = self._read_response_line_if_ready(response)
+                else:
+                    line = response.fp.readline()
+                logger.debug("* read line: %r", line)
                 this_line_is_blank = self._is_line_blank(line)
+                if last_line_is_blank and this_line_is_blank:
+                    self._flush_response_buffer(response)
+                    break
 
-                if body_length is None and this_line_is_blank:
-                    body_length = 0
-                    previous_line = line
+                if this_line_is_blank:
+                    last_line_is_blank = True
                     continue
                 else:
-                    if line is not None and body_length is not None:
-                        body_length += len(line)
-
-                    logger.debug(
-                        "* body length read so far: %s of %s",
-                        body_length,
-                        content_length_header or "unknown"
-                    )
-
-                    if (
-                        body_length is not None
-                        and content_length_header is not None
-                        and body_length >= content_length_header
-                    ):
-                        # we have read the whole response body according to the
-                        # Content-Length response header value.
-                        # We break away from the loop because we have finished draining
-                        # the socket.
-                        break
-                    elif (
-                        this_line_is_blank
-                        and content_length_header is None
-                        and previous_line is not None
-                        and self._is_line_blank(previous_line)
-                    ):
-                        # we have read all the response headers but there was no
-                        # Content-Length header present in the response headers.
-                        # This line is blank and the one before it was blank line too,
-                        # we read the next line (if any) and if it is blank or does not
-                        # exists, we break away from the loop because we have finished
-                        # draining the socket.
-                        line = self._read_response_line_if_ready(response)
-                        if self._is_line_blank(line):
-                            break
+                    last_line_is_blank = False
 
                 if line is not None and line.decode("utf-8").startswith(match_string):
-                    # we handle the NTLM challenge message
                     logger.debug("< %r", line)
                     line = line.decode("utf-8")
-                    previous_line = line
                     ntlm_context.set_challenge_from_header(line)
                     authenticate_hdr = ntlm_context.get_authenticate_header()
-                    logger.debug("* authenticate header: %r", authenticate_hdr)
-                    continue
-                elif (
-                    line is not None
-                    and line.decode("utf-8").startswith(content_length_match_string)
-                ):
-                    # we handle the Content-Length header
-                    logger.info("< %r", line)
-                    line = line.decode("utf-8")
-                    try:
-                        content_length_header = int(
-                            line.replace(content_length_match_string, "").strip()
-                        )
-                    except (ValueError, TypeError):
-                        pass
+                    self._flush_response_buffer(response)
+                    break
 
                 if line is not None and len(line) > _MAXLINE:
                     raise LineTooLong("header line")
 
                 logger.debug("< %r", line)
-                previous_line = line
 
+            if not authenticate_hdr:
+                logger.warning("* the NTLM challenge header was not found!")
             header_bytes = self._get_header_bytes(proxy_auth_header=authenticate_hdr)
-            logger.debug("* sending authenticate header: %r", header_bytes)
+            logger.debug("* sending the NTLM authenticate message")
             self.send(header_bytes)
             version, code, message, response = self._get_response()
 
         if code != 200:
+            logger.error("* HTTP %s: failed to establish NTLM proxy tunnel", code)
             self.close()
             raise socket.error(
                 "Tunnel connection failed: %d %s" % (code, message.strip())
@@ -286,8 +258,10 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
             line = response.fp.readline()
             if line is not None and len(line) > _MAXLINE:
                 raise LineTooLong("header line")
-            if self._is_line_blank(line):
+            if line is None or self._is_line_blank(line):
                 break
+
+        logger.debug("* successfully established proxy tunnel!")
 
 
 try:
