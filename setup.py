@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-version = "6.5.2"
+version = "6.5.3"
 url = "https://github.com/dopstar/requests-ntlm2"
 
 if "a" in version:
@@ -23,35 +23,12 @@ requirements = [
     "six>=1.10",
 ]
 
-testing_requirements = [
-    "flask",
-    "pytest",
-    "pytest-cov",
-    "wheel",
-    "codecov",
-    "coverage",
-    "mock",
-    "faker",
-    "trustme==0.7.0",
-]
-
-linting_requirements = [
-    "flake8",
-    "bandit==1.6.2; python_version == '2.7'",
-    "bandit; python_version != '2.7'",
-    "flake8-isort==4.1.1; python_version == '2.7'",
-    "flake8-isort; python_version != '2.7'",
-    "flake8-quotes",
-]
-
 
 setup(
     name="requests_ntlm2",
     version=version,
     packages=["requests_ntlm2"],
     install_requires=requirements,
-    tests_require=testing_requirements,
-    extras_require={"testing": testing_requirements, "linting": linting_requirements},
     author="Mkhanyisi Madlavana",
     author_email="mmadlavana@gmail.com",
     url=url,
@@ -81,6 +58,7 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "License :: OSI Approved :: ISC License (ISCL)",
         "Operating System :: MacOS",
         "Operating System :: POSIX :: Linux",
