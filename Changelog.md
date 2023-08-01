@@ -1,4 +1,4 @@
-#### [6.5.3](https://github.com/dopstar/requests-ntlm2/releases/tag/6.5.2) - 01 Aug 2023
+#### [6.5.3](https://github.com/dopstar/requests-ntlm2/releases/tag/6.5.3) - 01 Aug 2023
  - moved development requirements from `setup.py` to `dev-requirements.in` - https://github.com/dopstar/requests-ntlm2/pull/41
 
 #### [6.5.2](https://github.com/dopstar/requests-ntlm2/releases/tag/6.5.2) - 24 Oct 2022
