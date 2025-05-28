@@ -1,7 +1,6 @@
 import base64
 import logging
 
-import ntlm_auth.messages
 import ntlm_auth.ntlm
 
 from .core import NtlmCompatibility, fix_target_info
@@ -55,12 +54,12 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
         """
         if auth_type not in ("NTLM", "Negotiate"):
             raise ValueError(
-                'Expected "NTLM" or "Negotiate" auth_type, got {}'.format(auth_type)
+                f'Expected "NTLM" or "Negotiate" auth_type, got {auth_type}'
             )
         self._auth_type = auth_type
         self._challenge_token = None
         self.ntlm_strict_mode = ntlm_strict_mode
-        super(HttpNtlmContext, self).__init__(
+        super().__init__(
             username,
             password,
             domain=domain,
@@ -123,7 +122,7 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
 
     def get_negotiate_header(self):
         negotiate_message = self.create_negotiate_message().decode("ascii")
-        result = u"{auth_type} {negotiate_message}".format(
+        result = "{auth_type} {negotiate_message}".format(
             auth_type=self._auth_type, negotiate_message=negotiate_message
         )
         return result
@@ -133,7 +132,7 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
             return None
 
         match_strings = (
-            "{} ".format(self._auth_type),
+            f"{self._auth_type} ",
             "{}: {} ".format("Proxy-Authenticate", self._auth_type),
             "{}: {} ".format("WWW-Authenticate", self._auth_type),
         )
@@ -148,7 +147,7 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
     def get_authenticate_header(self):
         authenticate_message = self.create_authenticate_message()
         authenticate_message = authenticate_message.decode("ascii")
-        return u"{auth_type} {authenticate_message}".format(
+        return "{auth_type} {authenticate_message}".format(
             auth_type=self._auth_type,
             authenticate_message=authenticate_message
         )

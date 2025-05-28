@@ -1,15 +1,8 @@
 from setuptools import setup
 
 
-version = "6.5.3"
+version = "6.6.0"
 url = "https://github.com/dopstar/requests-ntlm2"
-
-if "a" in version:
-    dev_status = "3 - Alpha"
-elif "b" in version:
-    dev_status = "4 - Beta"
-else:
-    dev_status = "5 - Production/Stable"
 
 
 with open("README.md") as fd:
@@ -20,7 +13,6 @@ requirements = [
     "requests>=2.0.0",
     "ntlm-auth>=1.0.2",
     "cryptography>=1.3",
-    "six>=1.10",
 ]
 
 
@@ -48,17 +40,18 @@ setup(
     package_dir={"requests_ntlm2": "requests_ntlm2"},
     package_data={"requests_ntlm2": ["*.md", "LICENSE"]},
     classifiers=[
-        "Development Status :: {0}".format(dev_status),
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "Natural Language :: English",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "License :: OSI Approved :: ISC License (ISCL)",
         "Operating System :: MacOS",
         "Operating System :: POSIX :: Linux",

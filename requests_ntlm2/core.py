@@ -1,8 +1,8 @@
 import binascii
 import logging
 import struct
-import sys
 import warnings
+from typing import Optional, Tuple
 
 import ntlm_auth.constants
 from cryptography import x509
@@ -17,7 +17,7 @@ from requests.packages.urllib3.response import HTTPResponse
 logger = logging.getLogger(__name__)
 
 
-class NtlmCompatibility(object):
+class NtlmCompatibility:
     # see Microsoft doc on compatibility levels here: https://bit.ly/2OWZVxp
     LM_AND_NTLMv1 = 0
     LM_AND_NTLMv1_WITH_ESS = 1
@@ -38,20 +38,18 @@ def get_server_cert(response):
     socket is then checked if it is an SSL socket and then used to get the
     hash of the certificate. The certificate hash is then used with NTLMv2
     authentication for Channel Binding Tokens support. If the raw object
-    is not a urllib3 HTTPReponse (default with requests) then no
-    certificate will be returned.
+    is not urllib3 HTTPResponse (default with requests) then no certificate
+    will be returned.
 
     :param response: The original 401 response from the server
-    :return: The hash of the DER encoded certificate at the request_url or None if not a HTTPS url
+    :return: The hash of the DER encoded certificate at the request_url or None
+        if not an HTTPS url.
     """
     raw_response = response.raw
 
     if isinstance(raw_response, HTTPResponse):
         try:
-            if sys.version_info > (3, 0):
-                socket = raw_response._fp.fp.raw._sock
-            else:
-                socket = raw_response._fp.fp._sock
+            socket = raw_response._fp.fp.raw._sock
         except AttributeError:
             return None
 
@@ -66,9 +64,10 @@ def get_server_cert(response):
             "Requests is running with a non urllib3 backend,"
             " cannot retrieve server certificate for CBT"
         )
+    return None
 
 
-def get_certificate_hash_bytes(certificate_der):
+def get_certificate_hash_bytes(certificate_der: bytes) -> Optional[bytes]:
     # https://tools.ietf.org/html/rfc5929#section-4.1
     cert = x509.load_der_x509_certificate(certificate_der, default_backend())
 
@@ -96,7 +95,7 @@ def get_certificate_hash_bytes(certificate_der):
     return certificate_hash_bytes
 
 
-def get_auth_type_from_header(header):
+def get_auth_type_from_header(header: str) -> Optional[str]:
     """
     Given a WWW-Authenticate or Proxy-Authenticate header, returns the
     authentication type to use. We prefer NTLM over Negotiate if the server
@@ -109,7 +108,7 @@ def get_auth_type_from_header(header):
     return None
 
 
-def get_ntlm_credentials(username, password):
+def get_ntlm_credentials(username: str, password: str) -> Tuple[str, str, str]:
     try:
         domain, username = username.split("\\", 1)
     except ValueError:
@@ -144,7 +143,7 @@ def get_cbt_data(response):
     return cbt_data
 
 
-def is_challenge_message(msg):
+def is_challenge_message(msg: bytes) -> bool:
     try:
         message_type = struct.unpack("<I", msg[8:12])[0]
         return message_type == ntlm_auth.constants.MessageTypes.NTLM_CHALLENGE
@@ -152,7 +151,7 @@ def is_challenge_message(msg):
         return False
 
 
-def is_challenge_message_valid(msg):
+def is_challenge_message_valid(msg: bytes) -> bool:
     try:
         _ = ChallengeMessage(msg)
         return True
@@ -160,7 +159,7 @@ def is_challenge_message_valid(msg):
         return False
 
 
-def fix_target_info(challenge_msg):
+def fix_target_info(challenge_msg: bytes) -> bytes:
     if not is_challenge_message(challenge_msg):
         return challenge_msg
 

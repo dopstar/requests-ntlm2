@@ -1,7 +1,7 @@
 import base64
+from unittest import mock
 
 import faker
-import mock
 import ntlm_auth.ntlm
 import pytest
 
@@ -10,7 +10,7 @@ import requests_ntlm2.core
 import requests_ntlm2.dance
 
 
-class TestHttpNtlmContext(object):
+class TestHttpNtlmContext:
     fake = faker.Factory.create()
 
     def test__init(self):

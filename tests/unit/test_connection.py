@@ -2,18 +2,13 @@ import socket
 import sys
 import tempfile
 import unittest
+from http.client import LineTooLong
+from io import BytesIO
+from unittest import mock
 
 import faker
-import mock
-from six.moves.http_client import LineTooLong
 
 from requests_ntlm2.connection import _MAXLINE, VerifiedHTTPSConnection
-
-
-try:
-    from StringIO import StringIO as BytesIO  # py2
-except ImportError:
-    from io import BytesIO  # py3
 
 
 class TestVerifiedHTTPSConnection(unittest.TestCase):
@@ -179,7 +174,7 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         self.conn.set_ntlm_auth_credentials(username, password)
 
         error_msg = "Tunnel connection failed: 407 Proxy Authentication Required"
-        with self.assertRaisesRegexp(socket.error, error_msg):
+        with self.assertRaisesRegex(socket.error, error_msg):
             self.conn._tunnel()
 
         mock_get_response.assert_called()

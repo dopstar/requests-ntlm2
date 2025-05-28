@@ -1,9 +1,9 @@
 import logging
+from urllib.parse import urlparse
 
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.connection import HTTPConnection, HTTPSConnection
 from requests.packages.urllib3.poolmanager import pool_classes_by_scheme
-from six.moves.urllib.parse import urlparse
 
 from .connection import DEFAULT_HTTP_VERSION
 from .connection import HTTPConnection as _HTTPConnection
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class HttpProxyAdapter(HTTPAdapter):
     def __init__(self, user_agent=None, *args, **kwargs):
         self._user_agent = user_agent
-        super(HttpProxyAdapter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _add_host_header(self, request):
         if request.headers.get("Host"):
@@ -52,11 +52,11 @@ class HttpProxyAdapter(HTTPAdapter):
             pass
 
     def add_headers(self, request, **kwargs):
-        super(HttpProxyAdapter, self).add_headers(request, **kwargs)
+        super().add_headers(request, **kwargs)
         self._add_host_header(request)
 
     def proxy_headers(self, proxy):
-        headers = super(HttpProxyAdapter, self).proxy_headers(proxy)
+        headers = super().proxy_headers(proxy)
         if self._user_agent and all(k.lower() != "user-agent" for k in headers):
             headers["User-Agent"] = self._user_agent
         logger.debug("proxy headers: %s", headers)
@@ -84,11 +84,11 @@ class HttpNtlmAdapter(HttpProxyAdapter):
             ntlm_strict_mode,
             proxy_tunnelling_http_version
         )
-        super(HttpNtlmAdapter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def close(self):
         self._teardown()
-        super(HttpNtlmAdapter, self).close()
+        super().close()
 
     @staticmethod
     def _setup(username, password, ntlm_compatibility, ntlm_strict_mode, http_version):
