@@ -1,8 +1,8 @@
 import base64
 import warnings
+from unittest import mock
 
 import faker
-import mock
 import requests
 
 import requests_ntlm2
@@ -17,9 +17,9 @@ except ImportError:
     from io import BytesIO, StringIO  # py3
 
 
-class TestHttpNtlmAuth(object):
+class TestHttpNtlmAuth:
     test_server_url = "http://localhost:5000/"
-    test_server_username = "%s\\%s" % (domain, username)
+    test_server_username = "{}\\{}".format(domain, username)
     test_server_password = password
     auth_types = ["ntlm", "negotiate", "both"]
 
@@ -34,7 +34,7 @@ class TestHttpNtlmAuth(object):
 
     def test_extract_username_and_password(self):
         auth = requests_ntlm2.HttpNtlmAuth(self.test_server_username, self.test_server_password)
-        assert auth.extract_username_and_password() == ("{}\\{}".format(domain.upper(), username), password)  # noqa
+        assert auth.extract_username_and_password() == (f"{domain.upper()}\\{username}", password)  # noqa
 
         fake = faker.Factory.create()
         username2 = fake.user_name()
@@ -389,7 +389,7 @@ class TestHttpNtlmAuth(object):
             mock_auth_header.assert_called()
 
 
-class TestCertificateHash(object):
+class TestCertificateHash:
     def test_rsa_md5(self):
         cert_der = (
             b"MIIDGzCCAgOgAwIBAgIQJzshhViMG5hLHIJHxa+TcTANBgkqhkiG9w0"

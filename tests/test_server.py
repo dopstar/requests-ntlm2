@@ -37,9 +37,9 @@ def get_auth_response(auth_type, advertise_nego_and_ntlm=False):
             else "Negotiate, NTLM"
         }
         status_code = 401
-        response = "auth with '%s\\%s':'%s'" % (domain, username, password)
+        response = "auth with '{}\\{}':'{}'".format(domain, username, password)
     else:
-        # Set human readable names for message types
+        # Set human-readable names for message types
         # see https://msdn.microsoft.com/en-us/library/cc236639.aspx
         expected_signature = b"NTLMSSP\x00"
         negotiate_message_type = 1
@@ -64,7 +64,7 @@ def get_auth_response(auth_type, advertise_nego_and_ntlm=False):
             )
             challenge_header = auth_type + " " + challenge_response
             response_headers = {"WWW-Authenticate": challenge_header}
-            response = "auth with '%s\\%s':'%s'" % (domain, username, password)
+            response = "auth with '{}\\{}':'{}'".format(domain, username, password)
             status_code = 401
         elif message_type == authenticate_message_type:
             # Received final NTLM message, return 200
@@ -72,11 +72,9 @@ def get_auth_response(auth_type, advertise_nego_and_ntlm=False):
             status_code = 200
             response = "authed"
         else:
-            # Should only ever receive a negotiate (1)
-            # or auth (3) message from requests_ntlm
+            # Should only receive a Negotiate (1) or Auth (3) message from requests_ntlm
             raise ValueError(
-                "Mismatch on NTLM message type,"
-                " expecting: 1 or 3, actual: %d" % message_type
+                f"Mismatch on NTLM message type, expecting: 1 or 3, got: {message_type}"
             )
 
     return response, status_code, response_headers

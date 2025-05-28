@@ -1,4 +1,5 @@
-import mock
+from unittest import mock
+
 import requests.adapters
 import requests.sessions
 from requests.packages.urllib3.connection import HTTPConnection, HTTPSConnection
@@ -7,7 +8,7 @@ import requests_ntlm2.adapters
 import requests_ntlm2.connection
 
 
-class TestHttpProxyAdapter(object):
+class TestHttpProxyAdapter:
     def test_init(self):
         adapter = requests_ntlm2.adapters.HttpProxyAdapter()
         assert isinstance(adapter, requests_ntlm2.adapters.HttpProxyAdapter)
@@ -94,7 +95,7 @@ class TestHttpProxyAdapter(object):
         mock_proxy_headers.assert_called_once_with({"this": "that"})
 
 
-class TestHttpNtlmAdapter(object):
+class TestHttpNtlmAdapter:
     @mock.patch("requests_ntlm2.adapters.HttpNtlmAdapter._teardown")
     @mock.patch("requests_ntlm2.adapters.HttpNtlmAdapter._setup")
     def test_init(self, mock_setup, mock_teardown):

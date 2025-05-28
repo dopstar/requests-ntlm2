@@ -63,7 +63,7 @@ class HttpNtlmAuth(AuthBase):
             if content_length > 0:
                 try:
                     response.request.body.seek(-content_length, 1)
-                except (io.UnsupportedOperation, OSError, IOError, ValueError):
+                except (io.UnsupportedOperation, OSError, ValueError):
                     response.request.body.seek(0, 0)
             else:
                 response.request.body.seek(0, 0)
@@ -158,5 +158,5 @@ class HttpNtlmAuth(AuthBase):
 
     def extract_username_and_password(self):
         if self.domain:
-            return "{}\\{}".format(self.domain, self.username), self.password
+            return f"{self.domain}\\{self.username}", self.password
         return self.username, self.password

@@ -1,3 +1,6 @@
+#### [6.6.0](https://github.com/dopstar/requests-ntlm2/releases/tag/6.5.3) - 28 May 2025
+ - removed Python 2 support
+
 #### [6.5.3](https://github.com/dopstar/requests-ntlm2/releases/tag/6.5.3) - 01 Aug 2023
  - moved development requirements from `setup.py` to `dev-requirements.in` - https://github.com/dopstar/requests-ntlm2/pull/41
 

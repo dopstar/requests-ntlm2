@@ -2,12 +2,12 @@ import logging
 import re
 import select
 import socket
+from http.client import PROXY_AUTHENTICATION_REQUIRED, LineTooLong
 
 from requests.packages.urllib3.connection import DummyConnection
 from requests.packages.urllib3.connection import HTTPConnection as _HTTPConnection
 from requests.packages.urllib3.connection import HTTPSConnection as _HTTPSConnection
 from requests.packages.urllib3.connection import VerifiedHTTPSConnection as _VerifiedHTTPSConnection
-from six.moves.http_client import PROXY_AUTHENTICATION_REQUIRED, LineTooLong
 
 from .core import NtlmCompatibility, get_ntlm_credentials, noop
 from .dance import HttpNtlmContext
@@ -56,7 +56,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
     ntlm_strict_mode = False
 
     def __init__(self, *args, **kwargs):
-        super(VerifiedHTTPSConnection, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._continue_reading_headers = True
         if self.ntlm_compatibility is None:
             self.ntlm_compatibility = NtlmCompatibility.NTLMv2_DEFAULT
@@ -146,7 +146,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                 logger.debug("HTTP/0.9: code=%s", code)
                 logger.debug("HTTP/0.9: message=%s", message)
         else:
-            logger.debug("< %r", "{} {} {}".format(version, code, message))
+            logger.debug("< %r", f"{version} {code} {message}")
         return version, code, message, response
 
     def _get_http_version(self):
@@ -166,11 +166,11 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         if proxy_auth_header:
             self._tunnel_headers["Proxy-Authorization"] = proxy_auth_header
         self._tunnel_headers["Proxy-Connection"] = "Keep-Alive"
-        self._tunnel_headers["Host"] = "{}:{}".format(host, port)
+        self._tunnel_headers["Host"] = f"{host}:{port}"
 
         for header in sorted(self._tunnel_headers):
             value = self._tunnel_headers[header]
-            header_byte = "%s: %s\r\n" % (header, value)
+            header_byte = "{}: {}\r\n".format(header, value)
             logger.debug("> %r", header_byte)
             header_bytes += header_byte
         header_bytes += "\r\n"
@@ -251,7 +251,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         if code != 200:
             logger.error("* HTTP %s: failed to establish NTLM proxy tunnel", code)
             self.close()
-            raise socket.error(
+            raise OSError(
                 "Tunnel connection failed: %d %s" % (code, message.strip())
             )
         while self._continue_reading_headers:

@@ -1,8 +1,8 @@
 import base64
 import struct
+from unittest import mock
 
 import faker
-import mock
 import ntlm_auth.gss_channel_bindings
 import trustme
 from requests.packages.urllib3.response import HTTPResponse
@@ -10,7 +10,7 @@ from requests.packages.urllib3.response import HTTPResponse
 import requests_ntlm2.core
 
 
-class TestNtlmCompatibility(object):
+class TestNtlmCompatibility:
     def test_ntlm_compatibility_levels(self):
         assert requests_ntlm2.core.NtlmCompatibility.LM_AND_NTLMv1 == 0
         assert requests_ntlm2.core.NtlmCompatibility.LM_AND_NTLMv1_WITH_ESS == 1
@@ -20,7 +20,7 @@ class TestNtlmCompatibility(object):
         assert requests_ntlm2.core.NtlmCompatibility.NTLMv2_LEVEL5 == 5
 
 
-class TestCoreFunctions(object):
+class TestCoreFunctions:
     @mock.patch("requests_ntlm2.core.get_server_cert")
     def test_get_cbt_data__no_peer_cert(self, mock_get_server_cert):
         mock_get_server_cert.return_value = None
@@ -54,7 +54,7 @@ class TestCoreFunctions(object):
         assert response == (username, password, "")
 
         response = requests_ntlm2.core.get_ntlm_credentials(
-            r"{}\{}".format(domain, username),
+            fr"{domain}\{username}",
             password
         )
         assert response == (username, password, domain)
