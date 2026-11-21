@@ -1,16 +1,70 @@
 import base64
 import logging
-from typing import Optional, Union
+import struct
+from typing import Optional, Tuple, Union
 
+import ntlm_auth.constants
 import ntlm_auth.ntlm
 from ntlm_auth.gss_channel_bindings import GssChannelBindingsStruct
 from ntlm_auth.messages import AuthenticateMessage, ChallengeMessage, NegotiateMessage
 from ntlm_auth.session_security import SessionSecurity
 
-from .core import NtlmCompatibility, fix_target_info
+from .compatibility import NtlmCompatibility
 
 
 logger = logging.getLogger(__name__)
+
+
+def get_ntlm_credentials(username: str, password: str) -> Tuple[str, str, str]:
+    try:
+        domain, username = username.split("\\", 1)
+    except ValueError:
+        domain = ""
+    return username, password, domain
+
+
+def is_challenge_message(msg: bytes) -> bool:
+    try:
+        message_type = struct.unpack("<I", msg[8:12])[0]
+        return message_type == ntlm_auth.constants.MessageTypes.NTLM_CHALLENGE
+    except struct.error:
+        return False
+
+
+def is_challenge_message_valid(msg: bytes) -> bool:
+    try:
+        _ = ChallengeMessage(msg)
+        return True
+    except struct.error:
+        return False
+
+
+def fix_target_info(challenge_msg: bytes) -> bytes:
+    if not is_challenge_message(challenge_msg):
+        return challenge_msg
+
+    if is_challenge_message_valid(challenge_msg):
+        return challenge_msg
+
+    signature = challenge_msg[:8]
+    if signature != ntlm_auth.constants.NTLM_SIGNATURE:
+        logger.warning("invalid signature: %r", signature)
+        return challenge_msg
+
+    negotiate_flags_raw = challenge_msg[20:24]
+    try:
+        negotiate_flags = struct.unpack("<I", negotiate_flags_raw)[0]
+    except struct.error:
+        logger.warning("Invalid Negotiate Flags: %s", negotiate_flags_raw)
+        return challenge_msg
+
+    if negotiate_flags & ntlm_auth.constants.NegotiateFlags.NTLMSSP_NEGOTIATE_TARGET_INFO:
+        try:
+            negotiate_flags &= ~ntlm_auth.constants.NegotiateFlags.NTLMSSP_NEGOTIATE_TARGET_INFO
+            return challenge_msg[:20] + struct.pack("<I", negotiate_flags) + challenge_msg[24:]
+        except struct.error:
+            return challenge_msg
+    return challenge_msg
 
 
 class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):

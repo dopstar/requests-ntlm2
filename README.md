@@ -18,12 +18,24 @@ pip install requests-ntlm2
 
 ## Usage
 
+Import classes from the module that defines them. The package root loads no
+authentication or proxy code.
+
+| Class | Import from |
+| --- | --- |
+| `HttpNtlmAuth` | `requests_ntlm2.auth` |
+| `NtlmCompatibility` | `requests_ntlm2.compatibility` |
+| `HttpProxyAdapter` | `requests_ntlm2.proxy.adapters.base` |
+| `HttpNtlmAdapter` | `requests_ntlm2.proxy.adapters.ntlm` |
+| `HTTPConnection`, `HTTPSConnection`, `VerifiedHTTPSConnection` | `requests_ntlm2.proxy.connection` |
+
+
 ### Basic Usage
 `HttpNtlmAuth` extends requests `AuthBase`, so usage is simple:
 
 ```python
 import requests
-from requests_ntlm2 import HttpNtlmAuth
+from requests_ntlm2.auth import HttpNtlmAuth
 
 auth=HttpNtlmAuth('domain\\username','password')
 requests.get("http://ntlm_protected_site.com", auth=auth)
@@ -37,7 +49,8 @@ compatibility level 3 which supports NTLMv2 [only]. You can change the compatibi
 
 ```python
 import requests
-from requests_ntlm2 import HttpNtlmAuth, NtlmCompatibility
+from requests_ntlm2.auth import HttpNtlmAuth
+from requests_ntlm2.compatibility import NtlmCompatibility
 
 username = 'domain\\username'
 password = 'password123'
@@ -56,7 +69,7 @@ NTLM challenge-response.
 
 ```python
 import requests
-from requests_ntlm2 import HttpNtlmAuth
+from requests_ntlm2.auth import HttpNtlmAuth
 
 session = requests.Session()
 session.auth = HttpNtlmAuth('domain\\username','password')
@@ -76,11 +89,9 @@ Here is a basic example:
 
 ```python
 import requests
-from requests_ntlm2 import (
-    HttpNtlmAuth,
-    HttpNtlmAdapter,
-    NtlmCompatibility
-)
+from requests_ntlm2.auth import HttpNtlmAuth
+from requests_ntlm2.compatibility import NtlmCompatibility
+from requests_ntlm2.proxy.adapters.ntlm import HttpNtlmAdapter
 
 username = '...'
 password = '...'
@@ -138,7 +149,7 @@ just test
 just build
 ```
 
-Run `just ruff`, `just bandit`, or `just typecheck` for an individual check.
+Run `just ruff`, `just bandit`, `just typecheck`, or `just imports` for an individual check.
 `just test` runs pytest with coverage, starts and stops the local test server,
 and enables OpenSSL's legacy provider for the NTLM tests when available. The
 test recipe uses Bash.

@@ -1,5 +1,5 @@
+import importlib.util
 import socket
-import sys
 import tempfile
 import unittest
 from http.client import LineTooLong
@@ -8,7 +8,7 @@ from unittest import mock
 
 import faker
 
-from requests_ntlm2.connection import _MAXLINE, VerifiedHTTPSConnection
+from requests_ntlm2.proxy.connection import _MAXLINE, VerifiedHTTPSConnection
 
 
 class TestVerifiedHTTPSConnection(unittest.TestCase):
@@ -107,9 +107,9 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         with self.assertRaises(AttributeError):
             self.conn._tunnel()
 
-    @mock.patch("requests_ntlm2.connection.select.select")
-    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection._get_response")
-    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection.send")
+    @mock.patch("requests_ntlm2.proxy.connection.select.select")
+    @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection._get_response")
+    @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection.send")
     def test__tunnel__line_too_long(self, mock_send, mock_get_response, mock_select):
         fp = BytesIO(
             b"Info: x%s\r\n"
@@ -138,9 +138,9 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         with self.assertRaises(LineTooLong):
             self.conn._tunnel()
 
-    @mock.patch("requests_ntlm2.connection.select.select")
-    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection._get_response")
-    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection.send")
+    @mock.patch("requests_ntlm2.proxy.connection.select.select")
+    @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection._get_response")
+    @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection.send")
     def test_tunnel__no_headers(self, mock_send, mock_get_response, mock_select):
         fp = BytesIO()
         response = type("Response", (), dict(fp=fp))
@@ -160,9 +160,9 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         self.assertEqual(mock_get_response.call_count, 2)
         self.assertEqual(mock_send.call_count, 2)
 
-    @mock.patch("requests_ntlm2.connection.select.select")
-    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection._get_response")
-    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection.send")
+    @mock.patch("requests_ntlm2.proxy.connection.select.select")
+    @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection._get_response")
+    @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection.send")
     def test_tunnel__no_proxy_auth_required(self, mock_send, mock_get_response, mock_select):
         fp = BytesIO()
         response = type("Response", (), dict(fp=fp))
@@ -180,9 +180,9 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         self.assertEqual(mock_get_response.call_count, 1)
         self.assertEqual(mock_send.call_count, 1)
 
-    @mock.patch("requests_ntlm2.connection.select.select")
-    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection._get_response")
-    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection.send")
+    @mock.patch("requests_ntlm2.proxy.connection.select.select")
+    @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection._get_response")
+    @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection.send")
     def test_tunnel(self, mock_send, mock_get_response, mock_select):
         fp = BytesIO(
             b"Proxy-Authenticate: NTLM TlRMTVNTUAACAAAABgAGADgAAAAGgokAyYpGWqVMA/QAAAAAAAAA"
@@ -219,9 +219,9 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         self.assertEqual(mock_get_response.call_count, 2)
         self.assertEqual(mock_send.call_count, 2)
 
-    @mock.patch("requests_ntlm2.connection.select.select")
-    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection._get_response")
-    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection.send")
+    @mock.patch("requests_ntlm2.proxy.connection.select.select")
+    @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection._get_response")
+    @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection.send")
     def test_tunnel__no_continue_read_headers(self, mock_send, mock_get_response, mock_select):
         fp = BytesIO(
             b"Proxy-Authenticate: NTLM TlRMTVNTUAACAAAABgAGADgAAAAGgokAyYpGWqVMA/QAAAAAAAAA"
@@ -261,9 +261,9 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         self.assertEqual(mock_send.call_count, 2)
         self.conn._continue_reading_headers = continue_reading_headers
 
-    @mock.patch("requests_ntlm2.connection.select.select")
-    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection._get_response")
-    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection.send")
+    @mock.patch("requests_ntlm2.proxy.connection.select.select")
+    @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection._get_response")
+    @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection.send")
     def test_tunnel_only_headers(self, mock_send, mock_get_response, mock_select):
         fp = BytesIO(
             b"Proxy-Authenticate: NTLM TlRMTVNTUAACAAAABgAGADgAAAAGgokAyYpGWqVMA/QAAAAAAAAA"
@@ -306,7 +306,7 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         self.assertEqual(response[:3], (1, 2, 3))
 
     @mock.patch("requests.packages.urllib3.connection.VerifiedHTTPSConnection.response_class")
-    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection.handle_http09_response")
+    @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection.handle_http09_response")
     def test__get_response__http09(self, mock_handle_http09_response, mock_response_class):
         mock_response_class.return_value._read_status.return_value = ("HTTP/0.9", 200, "")
         mock_handle_http09_response.return_value = None
@@ -317,7 +317,7 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         mock_handle_http09_response.assert_called_once()
 
     @mock.patch("requests.packages.urllib3.connection.VerifiedHTTPSConnection.response_class")
-    @mock.patch("requests_ntlm2.connection.VerifiedHTTPSConnection.handle_http09_response")
+    @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection.handle_http09_response")
     def test__get_response__http09_status(self, mock_handle_http09_response, mock_response_class):
         mock_response_class.return_value._read_status.return_value = ("HTTP/0.9", 200, "")
         mock_handle_http09_response.return_value = (10, 20, 30)
@@ -469,11 +469,16 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
 
 
 def test_import_error():
-    with mock.patch("requests_ntlm2.core.noop") as mock_noop:
-        mock_noop.side_effect = ImportError()
-        import requests_ntlm2.connection  # noqa - this is ensure sys.modules key is present
-        del sys.modules["requests_ntlm2.connection"]
-        import requests_ntlm2.connection  # noqa
-        assert (
-            requests_ntlm2.connection.HTTPSConnection is requests_ntlm2.connection.DummyConnection
-        )
+    spec = importlib.util.find_spec("requests_ntlm2.proxy.connection")
+    connection = importlib.util.module_from_spec(spec)
+    original_import = __import__
+
+    def import_without_ssl(name, *args, **kwargs):
+        if name == "ssl":
+            raise ImportError("SSL unavailable")
+        return original_import(name, *args, **kwargs)
+
+    with mock.patch("builtins.__import__", side_effect=import_without_ssl):
+        spec.loader.exec_module(connection)
+
+    assert connection.HTTPSConnection is connection.DummyConnection

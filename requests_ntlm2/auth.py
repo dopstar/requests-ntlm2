@@ -5,8 +5,22 @@ from ntlm_auth.session_security import SessionSecurity
 from requests import PreparedRequest, Response
 from requests.auth import AuthBase
 
-from .core import NtlmCompatibility, get_auth_type_from_header, get_cbt_data, get_ntlm_credentials
-from .dance import HttpNtlmContext
+from ._channel_binding import get_cbt_data
+from .compatibility import NtlmCompatibility
+from .dance import HttpNtlmContext, get_ntlm_credentials
+
+
+def get_auth_type_from_header(header: str) -> Optional[str]:
+    """
+    Given a WWW-Authenticate or Proxy-Authenticate header, returns the
+    authentication type to use. We prefer NTLM over Negotiate if the server
+    supports it.
+    """
+    if "ntlm" in header.lower():
+        return "NTLM"
+    elif "negotiate" in header.lower():
+        return "Negotiate"
+    return None
 
 
 class HttpNtlmAuth(AuthBase):
