@@ -122,10 +122,7 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
 
     def get_negotiate_header(self):
         negotiate_message = self.create_negotiate_message().decode("ascii")
-        result = "{auth_type} {negotiate_message}".format(
-            auth_type=self._auth_type, negotiate_message=negotiate_message
-        )
-        return result
+        return f"{self._auth_type} {negotiate_message}"
 
     def set_challenge_from_header(self, raw_header_value):
         if not raw_header_value:
@@ -133,8 +130,8 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
 
         match_strings = (
             f"{self._auth_type} ",
-            "{}: {} ".format("Proxy-Authenticate", self._auth_type),
-            "{}: {} ".format("WWW-Authenticate", self._auth_type),
+            f"Proxy-Authenticate: {self._auth_type} ",
+            f"WWW-Authenticate: {self._auth_type} ",
         )
         for header_value in raw_header_value.split(","):
             header_value = header_value.strip()
@@ -145,9 +142,5 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
         return None
 
     def get_authenticate_header(self):
-        authenticate_message = self.create_authenticate_message()
-        authenticate_message = authenticate_message.decode("ascii")
-        return "{auth_type} {authenticate_message}".format(
-            auth_type=self._auth_type,
-            authenticate_message=authenticate_message
-        )
+        authenticate_message = self.create_authenticate_message().decode("ascii")
+        return f"{self._auth_type} {authenticate_message}"

@@ -37,7 +37,7 @@ def get_auth_response(auth_type, advertise_nego_and_ntlm=False):
             else "Negotiate, NTLM"
         }
         status_code = 401
-        response = "auth with '{}\\{}':'{}'".format(domain, username, password)
+        response = f"auth with '{domain}\\{username}':'{password}'"
     else:
         # Set human-readable names for message types
         # see https://msdn.microsoft.com/en-us/library/cc236639.aspx
@@ -50,7 +50,7 @@ def get_auth_response(auth_type, advertise_nego_and_ntlm=False):
         if signature != expected_signature:
             raise ValueError(
                 "Mismatch on NTLM message signature,"
-                " expecting: %s, actual: %s" % (expected_signature, signature)
+                f" expecting: {expected_signature}, actual: {signature}"
             )
         # Get the NTLM version number (bytes 9 - 12)
         message_type = struct.unpack("<I", msg[8:12])[0]
@@ -64,7 +64,7 @@ def get_auth_response(auth_type, advertise_nego_and_ntlm=False):
             )
             challenge_header = auth_type + " " + challenge_response
             response_headers = {"WWW-Authenticate": challenge_header}
-            response = "auth with '{}\\{}':'{}'".format(domain, username, password)
+            response = f"auth with '{domain}\\{username}':'{password}'"
             status_code = 401
         elif message_type == authenticate_message_type:
             # Received final NTLM message, return 200
