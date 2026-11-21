@@ -88,6 +88,14 @@ class TestHttpNtlmAdapter:
         assert https_conn_cls is connection.HTTPSConnection
         adapter.close()
 
+    @mock.patch("requests_ntlm2.proxy.connection.HTTPSConnection.set_http_version")
+    def test__setup__without_http_version(self, set_http_version):
+        adapter = HttpNtlmAdapter("username", "password", proxy_tunnelling_http_version=None)
+        try:
+            set_http_version.assert_not_called()
+        finally:
+            adapter.close()
+
     @mock.patch("requests_ntlm2.proxy.connection.HTTPSConnection.clear_http_version")
     @mock.patch("requests_ntlm2.proxy.connection.HTTPSConnection.set_http_version")
     @mock.patch("requests_ntlm2.proxy.connection.HTTPSConnection.clear_ntlm_auth_credentials")
