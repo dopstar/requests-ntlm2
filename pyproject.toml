@@ -42,7 +42,7 @@ Source = "https://github.com/dopstar/requests-ntlm2"
 Tracker = "https://github.com/dopstar/requests-ntlm2/issues"
 
 [dependency-groups]
-dev = ["bandit", "basedpyright", "ruff", "types-requests"]
+dev = ["bandit", "basedpyright", "import-linter>=2.12", "ruff", "types-requests"]
 test = ["faker", "flask", "pytest", "pytest-cov", "trustme==0.7.0"]
 
 [tool.uv]
@@ -75,3 +75,23 @@ pythonVersion = "3.6"
 typeCheckingMode = "standard"
 venvPath = "."
 venv = ".venv"
+
+[tool.importlinter]
+root_package = "requests_ntlm2"
+
+[[tool.importlinter.contracts]]
+name = "Package modules must be acyclic"
+type = "acyclic_siblings"
+ancestors = ["requests_ntlm2"]
+
+[[tool.importlinter.contracts]]
+name = "Requests authentication and proxy transports are independent"
+type = "independence"
+modules = ["requests_ntlm2.auth", "requests_ntlm2.proxy"]
+
+[[tool.importlinter.contracts]]
+name = "Package initializers must stay free of internal imports"
+type = "forbidden"
+source_modules = ["requests_ntlm2", "requests_ntlm2.proxy", "requests_ntlm2.proxy.adapters"]
+forbidden_modules = ["requests_ntlm2", "requests_ntlm2.**"]
+as_packages = false

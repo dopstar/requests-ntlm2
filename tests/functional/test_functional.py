@@ -1,6 +1,6 @@
 import requests
 
-import requests_ntlm2
+from requests_ntlm2.auth import HttpNtlmAuth
 
 
 """
@@ -60,7 +60,7 @@ def send_request(url, username, password):
     """
     session = requests.Session()
     session.verify = False
-    session.auth = requests_ntlm2.HttpNtlmAuth(username, password)
+    session.auth = HttpNtlmAuth(username, password)
     response = session.get(url)
 
     return response

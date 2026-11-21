@@ -5,8 +5,8 @@ import socket
 from http.client import PROXY_AUTHENTICATION_REQUIRED, HTTPResponse, LineTooLong
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple, Union, cast
 
-from .core import NtlmCompatibility, get_ntlm_credentials, noop
-from .dance import HttpNtlmContext
+from ..compatibility import NtlmCompatibility
+from ..dance import HttpNtlmContext, get_ntlm_credentials
 
 
 if TYPE_CHECKING:
@@ -285,7 +285,6 @@ else:
 
 
     try:
-        noop()  # for testing purposes
         import ssl  # noqa
 
         # Make a copy for testing.

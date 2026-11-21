@@ -1,7 +1,7 @@
 default:
     @just --list
 
-lint: ruff bandit typecheck
+lint: ruff bandit typecheck imports
 
 ruff:
     uv run --locked --no-default-groups --group dev ruff check requests_ntlm2
@@ -11,6 +11,9 @@ bandit:
 
 typecheck:
     uv run --locked --no-default-groups --group dev basedpyright
+
+imports:
+    uv run --locked --no-default-groups --group dev lint-imports --no-cache
 
 test:
     #!/usr/bin/env bash
