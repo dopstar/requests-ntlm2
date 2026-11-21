@@ -42,17 +42,17 @@ Source = "https://github.com/dopstar/requests-ntlm2"
 Tracker = "https://github.com/dopstar/requests-ntlm2/issues"
 
 [dependency-groups]
-dev = ["bandit", "ruff"]
+dev = ["bandit", "basedpyright", "ruff", "types-requests"]
 test = ["faker", "flask", "pytest", "pytest-cov", "trustme==0.7.0"]
 
 [tool.uv]
 default-groups = ["dev", "test"]
 
 [tool.uv.dependency-groups]
-dev = { requires-python = ">=3.8" }
+dev = { requires-python = ">=3.10" }
 
 [tool.flit.sdist]
-include = ["tests/"]
+include = ["Justfile", "tests/"]
 exclude = ["**/__pycache__/"]
 
 [tool.ruff]
@@ -68,3 +68,10 @@ lines-after-imports = 2
 [tool.coverage.run]
 branch = true
 source = ["requests_ntlm2"]
+
+[tool.basedpyright]
+include = ["requests_ntlm2"]
+pythonVersion = "3.6"
+typeCheckingMode = "standard"
+venvPath = "."
+venv = ".venv"

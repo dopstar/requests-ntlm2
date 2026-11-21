@@ -2,7 +2,7 @@ import binascii
 import logging
 import struct
 import warnings
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import ntlm_auth.constants
 from cryptography import x509
@@ -11,7 +11,13 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from ntlm_auth.gss_channel_bindings import GssChannelBindingsStruct
 from ntlm_auth.messages import ChallengeMessage
-from requests.packages.urllib3.response import HTTPResponse
+from requests import Response
+
+
+if TYPE_CHECKING:
+    from urllib3.response import HTTPResponse
+else:
+    from requests.packages.urllib3.response import HTTPResponse
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +37,7 @@ class UnknownSignatureAlgorithmOID(Warning):
     pass
 
 
-def get_server_cert(response):
+def get_server_cert(response: Response) -> Optional[bytes]:
     """
     Get the certificate at the request_url and return it as a hash. Will
     get the raw socket from the original response from the server. This
@@ -49,7 +55,10 @@ def get_server_cert(response):
 
     if isinstance(raw_response, HTTPResponse):
         try:
-            socket = raw_response._fp.fp.raw._sock
+            fp = raw_response._fp
+            if fp is None:
+                return None
+            socket = getattr(fp.fp.raw, "_sock")
         except AttributeError:
             return None
 
@@ -73,6 +82,8 @@ def get_certificate_hash_bytes(certificate_der: bytes) -> Optional[bytes]:
 
     try:
         hash_algorithm = cert.signature_hash_algorithm
+        if hash_algorithm is None:
+            raise UnsupportedAlgorithm("The certificate signature has no separate hash algorithm")
     except UnsupportedAlgorithm as ex:
         logger.exception("e=")
         warnings.warn(
@@ -116,7 +127,7 @@ def get_ntlm_credentials(username: str, password: str) -> Tuple[str, str, str]:
     return username, password, domain
 
 
-def get_cbt_data(response):
+def get_cbt_data(response: Response) -> Optional[GssChannelBindingsStruct]:
     """
     Create Channel Binding for TLS data
 
@@ -188,5 +199,5 @@ def fix_target_info(challenge_msg: bytes) -> bytes:
     return challenge_msg
 
 
-def noop():
+def noop() -> None:
     pass

@@ -1,9 +1,9 @@
 import logging
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from urllib.parse import urlparse
 
+from requests import PreparedRequest
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.connection import HTTPConnection, HTTPSConnection
-from requests.packages.urllib3.poolmanager import pool_classes_by_scheme
 
 from .connection import DEFAULT_HTTP_VERSION
 from .connection import HTTPConnection as _HTTPConnection
@@ -11,51 +11,61 @@ from .connection import HTTPSConnection as _HTTPSConnection
 from .core import NtlmCompatibility
 
 
+if TYPE_CHECKING:
+    from urllib3.connection import HTTPConnection, HTTPSConnection
+    from urllib3.poolmanager import pool_classes_by_scheme
+else:
+    from requests.packages.urllib3.connection import HTTPConnection, HTTPSConnection
+    from requests.packages.urllib3.poolmanager import pool_classes_by_scheme
+
+
 logger = logging.getLogger(__name__)
 
 
 class HttpProxyAdapter(HTTPAdapter):
-    def __init__(self, user_agent=None, *args, **kwargs):
+    def __init__(
+        self, user_agent: Optional[str] = None, *args: Any, **kwargs: Any
+    ) -> None:
         self._user_agent = user_agent
         super().__init__(*args, **kwargs)
 
-    def _add_host_header(self, request):
+    def _add_host_header(self, request: PreparedRequest) -> None:
         if request.headers.get("Host"):
             if self._is_valid_host_header(request):
                 return
             else:
                 self._remove_host_header(request)
 
-        parse_result = urlparse(request.url)
+        parse_result = urlparse(cast(str, request.url))
         if parse_result.scheme == "http":
             if parse_result.port == 80:
-                request.headers["Host"] = parse_result.hostname
+                request.headers["Host"] = cast(str, parse_result.hostname)
             else:
                 request.headers["Host"] = parse_result.netloc
 
     @staticmethod
-    def _is_valid_host_header(request):
+    def _is_valid_host_header(request: PreparedRequest) -> bool:
         host = request.headers.get("Host")
         if not host:
             return False
-        parse_result = urlparse(request.url)
+        parse_result = urlparse(cast(str, request.url))
         if parse_result.scheme == "https":
             if host == parse_result.netloc and parse_result.port is not None:
                 return True
         return False
 
     @staticmethod
-    def _remove_host_header(request):
+    def _remove_host_header(request: PreparedRequest) -> None:
         try:
             del request.headers["Host"]
         except KeyError:
             pass
 
-    def add_headers(self, request, **kwargs):
+    def add_headers(self, request: PreparedRequest, **kwargs: Any) -> None:
         super().add_headers(request, **kwargs)
         self._add_host_header(request)
 
-    def proxy_headers(self, proxy):
+    def proxy_headers(self, proxy: str) -> Dict[str, str]:
         headers = super().proxy_headers(proxy)
         if self._user_agent and all(k.lower() != "user-agent" for k in headers):
             headers["User-Agent"] = self._user_agent
@@ -66,14 +76,14 @@ class HttpProxyAdapter(HTTPAdapter):
 class HttpNtlmAdapter(HttpProxyAdapter):
     def __init__(
         self,
-        ntlm_username,
-        ntlm_password,
-        ntlm_compatibility=NtlmCompatibility.NTLMv2_DEFAULT,
-        ntlm_strict_mode=False,
-        proxy_tunnelling_http_version=DEFAULT_HTTP_VERSION,
-        *args,
-        **kwargs
-    ):
+        ntlm_username: str,
+        ntlm_password: str,
+        ntlm_compatibility: int = NtlmCompatibility.NTLMv2_DEFAULT,
+        ntlm_strict_mode: bool = False,
+        proxy_tunnelling_http_version: Optional[str] = DEFAULT_HTTP_VERSION,
+        *args: Any,
+        **kwargs: Any
+    ) -> None:
         """
         Thin wrapper around requests.adapters.HTTPAdapter
         """
@@ -86,12 +96,18 @@ class HttpNtlmAdapter(HttpProxyAdapter):
         )
         super().__init__(*args, **kwargs)
 
-    def close(self):
+    def close(self) -> None:
         self._teardown()
         super().close()
 
     @staticmethod
-    def _setup(username, password, ntlm_compatibility, ntlm_strict_mode, http_version):
+    def _setup(
+        username: str,
+        password: str,
+        ntlm_compatibility: int,
+        ntlm_strict_mode: bool,
+        http_version: Optional[str],
+    ) -> None:
         pool_classes_by_scheme["http"].ConnectionCls = _HTTPConnection
         pool_classes_by_scheme["https"].ConnectionCls = _HTTPSConnection
         _HTTPSConnection.set_ntlm_auth_credentials(username, password)
@@ -103,7 +119,7 @@ class HttpNtlmAdapter(HttpProxyAdapter):
         _HTTPConnection.ntlm_strict_mode = ntlm_strict_mode
 
     @staticmethod
-    def _teardown():
+    def _teardown() -> None:
         pool_classes_by_scheme["http"].ConnectionCls = HTTPConnection
         pool_classes_by_scheme["https"].ConnectionCls = HTTPSConnection
         _HTTPSConnection.clear_ntlm_auth_credentials()
