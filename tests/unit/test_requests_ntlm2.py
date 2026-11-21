@@ -19,7 +19,7 @@ except ImportError:
 
 class TestHttpNtlmAuth:
     test_server_url = "http://localhost:5000/"
-    test_server_username = "{}\\{}".format(domain, username)
+    test_server_username = f"{domain}\\{username}"
     test_server_password = password
     auth_types = ["ntlm", "negotiate", "both"]
 

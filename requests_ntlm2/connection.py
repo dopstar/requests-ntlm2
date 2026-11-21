@@ -107,7 +107,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
             logger.debug("* reading line from response buffer")
             line = self._read_response_line_if_ready(response)
             logger.debug("< line %s: %r", line_count, line)
-            if line is None or line in ("", b""):
+            if not line:
                 logger.debug("* finished draining the socket")
                 break
 
@@ -124,9 +124,9 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                 break
             match = status_line_regex.search(line)
             if match:
-                status_line = match.groupdict()
-                logger.debug("< %r", "{version} {status} {message}".format(**status_line))
-                return status_line["version"], int(status_line["status"]), status_line["message"]
+                version, status, message = match.groups()
+                logger.debug("< %r", f"{version} {status} {message}")
+                return version, int(status), message
         return None
 
     def _get_response(self):
@@ -156,11 +156,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
 
     def _get_header_bytes(self, proxy_auth_header=None):
         host, port = self._get_hostport(self._tunnel_host, self._tunnel_port)
-        http_connect_string = "CONNECT {host}:{port} {http_version}\r\n".format(
-            host=host,
-            port=port,
-            http_version=self._get_http_version()
-        )
+        http_connect_string = f"CONNECT {host}:{port} {self._get_http_version()}\r\n"
         logger.debug("> %r", http_connect_string)
         header_bytes = http_connect_string
         if proxy_auth_header:
@@ -170,7 +166,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
 
         for header in sorted(self._tunnel_headers):
             value = self._tunnel_headers[header]
-            header_byte = "{}: {}\r\n".format(header, value)
+            header_byte = f"{header}: {value}\r\n"
             logger.debug("> %r", header_byte)
             header_bytes += header_byte
         header_bytes += "\r\n"
@@ -251,9 +247,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         if code != 200:
             logger.error("* HTTP %s: failed to establish NTLM proxy tunnel", code)
             self.close()
-            raise OSError(
-                "Tunnel connection failed: %d %s" % (code, message.strip())
-            )
+            raise OSError(f"Tunnel connection failed: {code:d} {message.strip()}")
         while self._continue_reading_headers:
             line = response.fp.readline()
             if line is not None and len(line) > _MAXLINE:

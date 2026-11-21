@@ -41,18 +41,12 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         self.assertEqual(
             headers,
             (
-                "CONNECT {host}:{port} HTTP/1.0\r\n"
-                "Host: {host}:{port}\r\n"
-                "Proxy-Authorization: {proxy_header}\r\n"
+                f"CONNECT {self.tunnel_host}:{self.tunnel_port} HTTP/1.0\r\n"
+                f"Host: {self.tunnel_host}:{self.tunnel_port}\r\n"
+                f"Proxy-Authorization: {proxy_auth_header}\r\n"
                 "Proxy-Connection: Keep-Alive\r\n"
                 "\r\n"
-            ).format(
-                proxy_header=proxy_auth_header,
-                host=self.tunnel_host,
-                port=self.tunnel_port
-            ).encode(
-                "latin1"
-            )
+            ).encode("latin1")
         )
         self.assertIsInstance(headers, bytes)
 
@@ -68,18 +62,12 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         self.assertEqual(
             headers,
             (
-                "CONNECT {host}:{port} HTTP/1.1\r\n"
-                "Host: {host}:{port}\r\n"
-                "Proxy-Authorization: {proxy_header}\r\n"
+                f"CONNECT {self.tunnel_host}:{self.tunnel_port} HTTP/1.1\r\n"
+                f"Host: {self.tunnel_host}:{self.tunnel_port}\r\n"
+                f"Proxy-Authorization: {proxy_auth_header}\r\n"
                 "Proxy-Connection: Keep-Alive\r\n"
                 "\r\n"
-            ).format(
-                proxy_header=proxy_auth_header,
-                host=self.tunnel_host,
-                port=self.tunnel_port
-            ).encode(
-                "latin1"
-            )
+            ).encode("latin1")
         )
         self.assertIsInstance(headers, bytes)
 
@@ -88,16 +76,11 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         self.assertEqual(
             headers,
             (
-                "CONNECT {host}:{port} HTTP/1.0\r\n"
-                "Host: {host}:{port}\r\n"
+                f"CONNECT {self.tunnel_host}:{self.tunnel_port} HTTP/1.0\r\n"
+                f"Host: {self.tunnel_host}:{self.tunnel_port}\r\n"
                 "Proxy-Connection: Keep-Alive\r\n"
                 "\r\n"
-            ).format(
-                host=self.tunnel_host,
-                port=self.tunnel_port
-            ).encode(
-                "latin1"
-            )
+            ).encode("latin1")
         )
         self.assertIsInstance(headers, bytes)
 
@@ -112,16 +95,11 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         self.assertEqual(
             headers,
             (
-                "CONNECT {host}:{port} HTTP/1.1\r\n"
-                "Host: {host}:{port}\r\n"
+                f"CONNECT {self.tunnel_host}:{self.tunnel_port} HTTP/1.1\r\n"
+                f"Host: {self.tunnel_host}:{self.tunnel_port}\r\n"
                 "Proxy-Connection: Keep-Alive\r\n"
                 "\r\n"
-            ).format(
-                host=self.tunnel_host,
-                port=self.tunnel_port
-            ).encode(
-                "latin1"
-            )
+            ).encode("latin1")
         )
         self.assertIsInstance(headers, bytes)
 

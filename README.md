@@ -68,7 +68,7 @@ ___
 When using `requests-ntlm2` to create SSL proxy tunnel via
 [HTTP CONNECT](https://en.wikipedia.org/wiki/HTTP_tunnel#HTTP_CONNECT_method), the so-called
 "NTLM Dance" - ie, the NTLM authentication handshake - has to be done at the lower level
-(at `httplib` level) at tunnel-creation step. This means that you should use the `HttpNtlmAdapter`
+(at the `http.client` level) during tunnel creation. Use the `HttpNtlmAdapter`
 and requests session. This `HttpNtlmAdapter` is responsible for sending proxy auth information
 downstream. 
 
@@ -88,8 +88,8 @@ proxy_ip = '...'
 proxy_port = '...'
 
 proxies = {
-    'http': 'http://{}:{}'.format(proxy_ip, proxy_port),
-    'https': 'http://{}:{}'.format(proxy_ip, proxy_port)
+    'http': f'http://{proxy_ip}:{proxy_port}',
+    'https': f'http://{proxy_ip}:{proxy_port}'
 }
 
 ntlm_compatibility = NtlmCompatibility.NTLMv2_DEFAULT
