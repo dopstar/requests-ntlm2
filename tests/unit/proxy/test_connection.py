@@ -164,7 +164,7 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
     @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection._get_response")
     @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection.send")
     def test_tunnel__no_proxy_auth_required(self, mock_send, mock_get_response, mock_select):
-        fp = BytesIO()
+        fp = BytesIO(b"Proxy-Agent: test-proxy\r\n\r\ntunnel data")
         response = type("Response", (), dict(fp=fp))
 
         mock_get_response.return_value = "HTTP/1.1", 200, "Success", response
@@ -179,12 +179,30 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         mock_send.assert_called()
         self.assertEqual(mock_get_response.call_count, 1)
         self.assertEqual(mock_send.call_count, 1)
+        self.assertEqual(fp.read(), b"tunnel data")
+
+    def test_tunnel__workstation_name_unavailable(self):
+        response = mock.Mock(fp=BytesIO(b"\r\n"))
+        self.conn.set_ntlm_auth_credentials(r"DOMAIN\username", "password")
+
+        with mock.patch(
+            "requests_ntlm2.proxy.connection.socket.gethostname", side_effect=ValueError
+        ), mock.patch(
+            "requests_ntlm2.proxy.connection.HttpNtlmContext"
+        ) as context, mock.patch.object(
+            self.conn, "_get_response", return_value=("HTTP/1.1", 200, "Success", response)
+        ), mock.patch.object(self.conn, "send"):
+            context.return_value.get_negotiate_header.return_value = "NTLM negotiate"
+            self.conn._tunnel()
+
+        self.assertIsNone(context.call_args[1]["workstation"])
 
     @mock.patch("requests_ntlm2.proxy.connection.select.select")
     @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection._get_response")
     @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection.send")
     def test_tunnel(self, mock_send, mock_get_response, mock_select):
         fp = BytesIO(
+            b"Proxy-Agent: test-proxy\r\n"
             b"Proxy-Authenticate: NTLM TlRMTVNTUAACAAAABgAGADgAAAAGgokAyYpGWqVMA/QAAAAAAAAA"
             b"AH4AfgA+AAAABQCTCAAAAA9ERVROU1cCAAwARABFAFQATgBTAFcAAQAaAFMARwAtADQAOQAxADMAM"
             b"wAwADAAMAAwADkABAAUAEQARQBUAE4AUwBXAC4AVwBJAE4AAwAwAHMAZwAtADQAOQAxADMAMwAwAD"

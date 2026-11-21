@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "requests-ntlm2"
-version = "6.6.0"
+version = "7.0.0"
 description = "The HTTP NTLM proxy and/or server authentication library."
 readme = "README.md"
 requires-python = ">=3.6"
@@ -68,6 +68,14 @@ lines-after-imports = 2
 [tool.coverage.run]
 branch = true
 source = ["requests_ntlm2"]
+
+[tool.coverage.report]
+fail_under = 100
+# Keep type-checker-only code excluded on the older coverage.py used by Python 3.6.
+exclude_lines = [
+    "pragma: no cover",
+    '^\s*if TYPE_CHECKING:',
+]
 
 [tool.basedpyright]
 include = ["requests_ntlm2"]
