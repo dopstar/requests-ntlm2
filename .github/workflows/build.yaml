@@ -1,88 +1,75 @@
 name: build
 
-on: [push]
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+env:
+  UV_VERSION: "0.13.9"
 
 jobs:
   lint:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
-      fail-fast: true
-
-    name: Lint on Python ${{ matrix.python-version }}
-
     steps:
-    - uses: actions/checkout@v2
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Lint
-      run: |
-        pip install -r dev-requirements.in
-        flake8 requests_ntlm2
-        bandit -r requests_ntlm2
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: "3.13"
+      - run: uv sync --locked --only-group dev
+      - run: uv run --no-sync ruff check requests_ntlm2
+      - run: uv run --no-sync bandit -r requests_ntlm2
 
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
-      fail-fast: true
-
-    name: Test on Python ${{ matrix.python-version }}
-
+        python:
+          - "3.6.15-buster"
+          - "3.7.17-bullseye"
+          - "3.8.20-bookworm"
+          - "3.9-bookworm"
+          - "3.10-bookworm"
+          - "3.11-bookworm"
+          - "3.12-bookworm"
+          - "3.13-bookworm"
+    name: Test on Python ${{ matrix.python }}
+    container: python:${{ matrix.python }}
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+      - run: uv sync --locked --python /usr/local/bin/python --no-default-groups --group test
+      - name: Test
+        shell: bash
+        run: |
+          if openssl_modules=$(openssl version -m 2>/dev/null); then
+            export OPENSSL_CONF="$PWD/tests/openssl-legacy.cnf"
+            export OPENSSL_MODULES="$(cut -d '"' -f 2 <<< "$openssl_modules")"
+          fi
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Enable MD4 Support
-      run: |
-        sudo tee --append /etc/ssl/openssl.cnf <<EOF
-        
-        [provider_sect]
-        default = default_sect
-        legacy = legacy_sect
+          .venv/bin/python -m tests.test_server &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          curl --silent --show-error --output /dev/null --retry 5 --retry-connrefused http://127.0.0.1:5000/ntlm
+          uv run --no-sync --no-default-groups --group test pytest --cov --cov-report=term-missing tests/unit
+      - name: Verify legacy package build
+        if: startsWith(matrix.python, '3.6.') || startsWith(matrix.python, '3.7.')
+        run: uv build --no-sources --python /usr/local/bin/python
 
-        [default_sect]
-        activate = 1
-
-        [legacy_sect]
-        activate = 1
-        
-        EOF
-    - name: Test
-      run: |
-        pip install -r dev-requirements.in .
-        python -m tests.test_server &> /dev/null &
-        pytest -xv --ignore=tests/functional/test_functional.py --ignore=tests/test_server.py --cov requests_ntlm2 --cov-report term-missing tests
-
-    - name: Upload coverage report to Codecov
-      uses: codecov/codecov-action@v1
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
   publish:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     needs: [lint, test]
-    name: Publish to PyPI
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
-      with:
-        python-version: '3.8'
-    - name: Build package
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-      run: |
-        pip install setuptools wheel
-        python setup.py sdist bdist_wheel
-    - name: Publish package
-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-      uses: pypa/gh-action-pypi-publish@master
-      with:
-        user: __token__
-        password: ${{ secrets.PYPI_TOKEN }}
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: "3.13"
+      - run: uv build --no-sources
+      - run: uv publish
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
