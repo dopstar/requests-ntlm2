@@ -3,12 +3,10 @@
 <br />
 
 [![Build Status](https://github.com/dopstar/requests-ntlm2/workflows/build/badge.svg?branch=master)](https://github.com/dopstar/requests-ntlm2/actions?query=workflow%3Abuild)
-[![codecov](https://codecov.io/gh/dopstar/requests-ntlm2/branch/master/graph/badge.svg)](https://codecov.io/gh/dopstar/requests-ntlm2)
 [![Python Version](https://img.shields.io/pypi/pyversions/requests-ntlm2.svg)](https://pypi.python.org/pypi/requests-ntlm2)
 [![PyPI Status](https://img.shields.io/pypi/v/requests-ntlm2.svg)](https://pypi.python.org/pypi/requests-ntlm2)
 [![Downloads](https://img.shields.io/pypi/dm/requests-ntlm2.svg)](https://pypi.python.org/pypi/requests-ntlm2)
 [![Licence](https://img.shields.io/github/license/dopstar/requests-ntlm2.svg)](https://raw.githubusercontent.com/dopstar/requests-ntlm2/master/LICENSE)
-[![Code Style: Black](https://img.shields.io/badge/code%20style-black-101010.svg)](https://github.com/psf/black)
 
 requests-ntlm2, which is based on [requests-ntlm](https://github.com/requests/requests-ntlm), allows for HTTP NTLM authentication using the requests library.
 
@@ -127,3 +125,28 @@ response = session.get('http:/foobar.com')
 
 - [requests](https://github.com/kennethreitz/requests/)
 - [ntlm-auth](https://github.com/jborean93/ntlm-auth)
+
+## Development
+
+The package supports Python 3.6 and later. Use [uv](https://docs.astral.sh/uv/)
+with a recent Python for development.
+
+```shell
+uv sync --locked --python 3.13
+uv run ruff check requests_ntlm2
+uv run bandit -r requests_ntlm2
+uv build
+```
+
+Start the local test server with `uv run python -m tests.test_server`. In a
+second terminal, run `uv run pytest --cov --cov-report=term-missing tests/unit`.
+On Linux with OpenSSL 3 or newer, enable the legacy provider before running
+pytest so NTLM password hashing can use MD4.
+
+```shell
+export OPENSSL_CONF="$PWD/tests/openssl-legacy.cnf"
+export OPENSSL_MODULES="$(openssl version -m | cut -d '"' -f 2)"
+```
+
+The separate functional suite requires Windows IIS. See
+`tests/functional/setup_iis.ps1` for its setup.

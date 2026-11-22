@@ -124,7 +124,8 @@ def get_cbt_data(response):
       - https://tools.ietf.org/html/rfc5929
       - https://github.com/jborean93/ntlm-auth#ntlmv2
       - https://github.com/requests/requests-ntlm/pull/116#discussion_r325961121
-      - https://support.microsoft.com/en-za/help/976918/authentication-failure-from-non-windows-ntlm-or-kerberos-servers  # noqa
+      - Microsoft support article on NTLM authentication failures:
+        https://support.microsoft.com/en-za/help/976918/authentication-failure-from-non-windows-ntlm-or-kerberos-servers
 
     :param response: HTTP Response object
     """
