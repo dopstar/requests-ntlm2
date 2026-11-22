@@ -1,8 +1,10 @@
 import base64
 import warnings
+from types import SimpleNamespace
 from unittest import mock
 
 import ntlm_auth.gss_channel_bindings
+import pytest
 import trustme
 from requests.packages.urllib3.response import HTTPResponse
 
@@ -39,6 +41,13 @@ class TestChannelBinding:
         response = _channel_binding.get_server_cert(raw_response)
         assert response is None
 
+    def test_get_server_cert__response_stream_has_no_socket(self):
+        raw = HTTPResponse()
+        raw._fp = SimpleNamespace(fp=SimpleNamespace(raw=object()))
+        response = SimpleNamespace(raw=raw)
+
+        assert _channel_binding.get_server_cert(response) is None
+
     @mock.patch("logging.Logger.warning")
     def test_get_server_cert__non_urllib3_backend(self, mock_logger_warning):
         raw_response = type("RawResponse", (), {"raw": None})
@@ -60,6 +69,16 @@ class TestChannelBinding:
 
 
 class TestCertificateHash:
+    @mock.patch("requests_ntlm2._channel_binding.x509.load_der_x509_certificate")
+    def test_signature_without_separate_hash(self, load_certificate):
+        load_certificate.return_value.signature_hash_algorithm = None
+
+        with pytest.warns(
+            _channel_binding.UnknownSignatureAlgorithmOID,
+            match="certificate signature has no separate hash algorithm",
+        ):
+            assert _channel_binding.get_certificate_hash_bytes(b"certificate") is None
+
     def test_rsa_md5(self):
         cert_der = (
             b"MIIDGzCCAgOgAwIBAgIQJzshhViMG5hLHIJHxa+TcTANBgkqhkiG9w0"

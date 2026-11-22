@@ -3280,7 +3280,7 @@ wheels = [
 
 [[package]]
 name = "requests-ntlm2"
-version = "6.6.0"
+version = "7.0.0"
 source = { editable = "." }
 default-groups = ["dev", "test"]
 dependencies = [
