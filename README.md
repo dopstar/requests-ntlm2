@@ -129,7 +129,7 @@ session.auth = HttpNtlmAuth(
 )
 session.proxies = proxies
 
-response = session.get('http:/foobar.com')
+response = session.get('https://example.com')
 ```
 
 ## Requirements

@@ -90,3 +90,22 @@ class TestHttpProxyAdapter:
             "User-Agent": "fake-ua/1.0"
         }
         mock_proxy_headers.assert_called_once_with({"this": "that"})
+
+
+def test_host_header_excludes_userinfo_and_preserves_ipv6_brackets():
+    adapter = HttpProxyAdapter()
+    request = requests.Request(url="http://alice:secret@[2001:db8::1]:80/").prepare()
+
+    adapter.add_headers(request)
+
+    assert request.headers["Host"] == "[2001:db8::1]"
+
+
+def test_proxy_headers_dont_log_credentials(caplog):
+    adapter = HttpProxyAdapter()
+    with caplog.at_level("DEBUG", logger="requests_ntlm2.proxy.adapters.base"):
+        headers = adapter.proxy_headers("http://alice:secret@proxy.example:8080")
+
+    assert headers["Proxy-Authorization"].startswith("Basic ")
+    assert headers["Proxy-Authorization"] not in caplog.text
+    assert "Proxy-Authorization" in caplog.text

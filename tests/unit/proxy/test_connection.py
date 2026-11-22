@@ -157,8 +157,8 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
 
         mock_get_response.assert_called()
         mock_send.assert_called()
-        self.assertEqual(mock_get_response.call_count, 2)
-        self.assertEqual(mock_send.call_count, 2)
+        self.assertEqual(mock_get_response.call_count, 1)
+        self.assertEqual(mock_send.call_count, 1)
 
     @mock.patch("requests_ntlm2.proxy.connection.select.select")
     @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection._get_response")
@@ -203,7 +203,7 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
     def test_tunnel(self, mock_send, mock_get_response, mock_select):
         fp = BytesIO(
             b"Proxy-Agent: test-proxy\r\n"
-            b"Proxy-Authenticate: NTLM TlRMTVNTUAACAAAABgAGADgAAAAGgokAyYpGWqVMA/QAAAAAAAAA"
+            b"proxy-authenticate: Basic realm=example, nTlM TlRMTVNTUAACAAAABgAGADgAAAAGgokAyYpGWqVMA/QAAAAAAAAA"
             b"AH4AfgA+AAAABQCTCAAAAA9ERVROU1cCAAwARABFAFQATgBTAFcAAQAaAFMARwAtADQAOQAxADMAM"
             b"wAwADAAMAAwADkABAAUAEQARQBUAE4AUwBXAC4AVwBJAE4AAwAwAHMAZwAtADQAOQAxADMAMwAwAD"
             b"AAMAAwADkALgBkAGUAdABuAHMAdwAuAHcAaQBuAAAAAAA=\r\n"
@@ -500,3 +500,19 @@ def test_import_error():
         spec.loader.exec_module(connection)
 
     assert connection.HTTPSConnection is connection.DummyConnection
+
+
+def test_connect_headers_are_isolated_and_tokens_are_not_logged(caplog):
+    connection = VerifiedHTTPSConnection("proxy.example")
+    original = {"proxy-authorization": "Basic configured", "host": "old.example"}
+    connection.set_tunnel("target.example", 443, headers=original)
+
+    with caplog.at_level("DEBUG", logger="requests_ntlm2.proxy.connection"):
+        headers = connection._get_header_bytes("NTLM outgoing-token")
+
+    assert headers.count(b"Proxy-Authorization:") == 1
+    assert b"Proxy-Authorization: NTLM outgoing-token\r\n" in headers
+    assert b"Basic configured" not in headers
+    assert b"Host: target.example:443\r\n" in headers
+    assert connection._tunnel_headers == original
+    assert "outgoing-token" not in caplog.text

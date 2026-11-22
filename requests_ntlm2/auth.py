@@ -1,9 +1,12 @@
 import io
+from collections.abc import Iterator
 from typing import Any, BinaryIO, Dict, Optional, Tuple, cast
+from urllib.request import parse_http_list
 
 from ntlm_auth.session_security import SessionSecurity
 from requests import PreparedRequest, Response
 from requests.auth import AuthBase
+from requests.exceptions import RequestException
 
 from ._channel_binding import get_cbt_data
 from .compatibility import NtlmCompatibility
@@ -16,11 +19,38 @@ def get_auth_type_from_header(header: str) -> Optional[str]:
     authentication type to use. We prefer NTLM over Negotiate if the server
     supports it.
     """
-    if "ntlm" in header.lower():
+    schemes = {
+        challenge.split(None, 1)[0].lower()
+        for challenge in parse_http_list(header)
+        if challenge.strip()
+    }
+    if "ntlm" in schemes:
         return "NTLM"
-    elif "negotiate" in header.lower():
+    elif "negotiate" in schemes:
         return "Negotiate"
     return None
+
+
+def _rewind_request_body(request: PreparedRequest) -> None:
+    body = request.body
+    if hasattr(body, "seek"):
+        seek = cast(BinaryIO, body).seek
+        position = getattr(request, "_body_position", None)
+        if isinstance(position, int):
+            seek(position)
+            return
+
+        # Older Requests versions may not save the body's starting position.
+        content_length = int(request.headers.get("Content-Length", "0"))
+        if content_length > 0:
+            try:
+                seek(-content_length, 1)
+                return
+            except (io.UnsupportedOperation, OSError, ValueError):
+                pass
+        seek(0)
+    elif isinstance(body, Iterator) or hasattr(body, "read"):
+        raise RequestException("Cannot resend a non-rewindable body for NTLM authentication")
 
 
 class HttpNtlmAuth(AuthBase):
@@ -51,7 +81,6 @@ class HttpNtlmAuth(AuthBase):
 
         if self.domain:
             self.domain = self.domain.upper()
-        self.password = password
         self.send_cbt = send_cbt
         self.ntlm_compatibility = ntlm_compatibility
         self.ntlm_strict_mode = ntlm_strict_mode
@@ -70,28 +99,10 @@ class HttpNtlmAuth(AuthBase):
         auth_type: str,
         kwargs: Dict[str, Any],
     ) -> Response:
-        # Get the certificate of the server if using HTTPS for CBT
-        cbt_data = None
-        if self.send_cbt:
-            cbt_data = get_cbt_data(response)
-
-        # Attempt to authenticate using HTTP NTLM challenge/response
         if auth_header in response.request.headers:
             return response
 
-        content_length = int(
-            response.request.headers.get("Content-Length", "0"), base=10
-        )
-        body = response.request.body
-        if hasattr(body, "seek"):
-            seek = cast(BinaryIO, body).seek
-            if content_length > 0:
-                try:
-                    seek(-content_length, 1)
-                except (io.UnsupportedOperation, OSError, ValueError):
-                    seek(0, 0)
-            else:
-                seek(0, 0)
+        cbt_data = get_cbt_data(response) if self.send_cbt else None
 
         # Consume content and release the original connection
         # to allow our new request to reuse the same one.
@@ -117,6 +128,7 @@ class HttpNtlmAuth(AuthBase):
         # challenge and not the real content, so the content will be short
         # anyway.
         args_nostream = dict(kwargs, stream=False)
+        _rewind_request_body(response.request)
         response2 = response.connection.send(request, **args_nostream)
 
         # needed to make NTLM auth compatible with requests-2.3.0
@@ -125,6 +137,10 @@ class HttpNtlmAuth(AuthBase):
         # to allow our new request to reuse the same one.
         _ = response2.content
         response2.raw.release_conn()
+        if not ntlm_context.set_challenge_from_header(response2.headers.get(auth_header_field)):
+            response2.history.append(response)
+            return response2
+
         request = response2.request.copy()
 
         # this is important for some web applications that store
@@ -134,12 +150,10 @@ class HttpNtlmAuth(AuthBase):
         if cookie:
             request.headers["Cookie"] = cookie
 
-        # get the challenge
-        ntlm_context.set_challenge_from_header(response2.headers[auth_header_field])
-
         # build response
         # Get the response based on the challenge message
         request.headers[auth_header] = ntlm_context.get_authenticate_header()
+        _rewind_request_body(response.request)
         response3 = response2.connection.send(request, **kwargs)
 
         # Update the history.

@@ -2,6 +2,7 @@ from io import BytesIO, StringIO
 from unittest import mock
 
 import faker
+import pytest
 import requests
 
 from requests_ntlm2.auth import HttpNtlmAuth, get_auth_type_from_header
@@ -243,7 +244,7 @@ class TestHttpNtlmAuth:
         response2.request = requests.Request(headers={})
         response2.raw = mock.MagicMock()
         response2.request.copy = mock.MagicMock()
-        response2.headers = {"set-cookie": "test-cookie", "foobar": "baz", "foobar2": "bla"}
+        response2.headers = {"set-cookie": "test-cookie", "foobar": "NTLM YWJj", "foobar2": "bla"}
         response2.connection = mock.MagicMock()
 
         response.raw = mock.MagicMock()
@@ -303,7 +304,7 @@ class TestHttpNtlmAuth:
         response2.request = requests.Request(headers={})
         response2.raw = mock.MagicMock()
         response2.request.copy = mock.MagicMock()
-        response2.headers = {"set-cookie": "test-cookie", "foobar": "baz", "foobar2": "bla"}
+        response2.headers = {"set-cookie": "test-cookie", "foobar": "NTLM YWJj", "foobar2": "bla"}
         response2.connection = mock.MagicMock()
 
         response.raw = mock.MagicMock()
@@ -362,7 +363,7 @@ class TestHttpNtlmAuth:
         response2.request = requests.Request(headers={})
         response2.raw = mock.MagicMock()
         response2.request.copy = mock.MagicMock()
-        response2.headers = {"set-cookie": "test-cookie", "foobar": "baz", "foobar2": "bla"}
+        response2.headers = {"set-cookie": "test-cookie", "foobar": "NTLM YWJj", "foobar2": "bla"}
         response2.connection = mock.MagicMock()
 
         response.raw = mock.MagicMock()
@@ -389,3 +390,90 @@ class TestAuthType:
         assert auth_type == "Negotiate"
         auth_type = get_auth_type_from_header("Basic")
         assert auth_type is None
+
+    @pytest.mark.parametrize("header, expected", [
+        ('Basic realm="example, NTLM users", bAsIc', None),
+        ("NTLM2, Negotiate", "Negotiate"),
+        (" , negotiate, nTlM", "NTLM"),
+    ])
+    def test_get_auth_type_from_header__matches_only_scheme_tokens(self, header, expected):
+        assert get_auth_type_from_header(header) == expected
+
+
+def test_auth_replays_upload_from_its_prepared_offset():
+    body = BytesIO(b"prefix:payload")
+    body.seek(len(b"prefix:"))
+    prepared = requests.Request("POST", "http://example.test", data=body).prepare()
+    assert body.read() == b"payload"
+
+    first = requests.Response()
+    first.status_code = 401
+    first.request = prepared
+    first.raw = mock.Mock(stream=lambda *args, **kwargs: iter(()))
+    second = requests.Response()
+    second.status_code = 401
+    second.headers["WWW-Authenticate"] = "ntlm YWJj"
+    second.raw = mock.Mock(stream=lambda *args, **kwargs: iter(()))
+    final = requests.Response()
+    final.status_code = 200
+    sends = []
+
+    def send_negotiate(request, **kwargs):
+        sends.append((request.body.read(), kwargs["stream"]))
+        second.request = request
+        return second
+
+    def send_authenticate(request, **kwargs):
+        sends.append((request.body.read(), kwargs["stream"]))
+        return final
+
+    first.connection = mock.Mock()
+    first.connection.send.side_effect = send_negotiate
+    second.connection = mock.Mock()
+    second.connection.send.side_effect = send_authenticate
+    auth = HttpNtlmAuth("username", "password", send_cbt=False)
+
+    with mock.patch("requests_ntlm2.dance.HttpNtlmContext.get_authenticate_header"):
+        assert auth.retry_using_http_ntlm_auth(
+            "WWW-Authenticate", "Authorization", first, "NTLM", {"stream": True}
+        ) is final
+
+    assert sends == [(b"payload", False), (b"payload", True)]
+    assert final.history == [first, second]
+
+
+def test_auth_stops_when_server_does_not_send_a_challenge():
+    auth = HttpNtlmAuth("username", "password", send_cbt=False)
+    first = requests.Response()
+    first.status_code = 401
+    first.headers["WWW-Authenticate"] = "NTLM"
+    first.request = requests.Request("GET", "http://example.test").prepare()
+    first.raw = mock.Mock(stream=lambda *args, **kwargs: iter(()))
+    first.connection = mock.Mock()
+    second = requests.Response()
+    second.status_code = 401
+    second.headers["WWW-Authenticate"] = "NTLM"
+    second.raw = mock.Mock(stream=lambda *args, **kwargs: iter(()))
+    second.connection = mock.Mock()
+    first.connection.send.return_value = second
+
+    assert auth.response_hook(first) is second
+    assert second.history == [first]
+    second.connection.send.assert_not_called()
+
+
+@pytest.mark.parametrize("body", [iter([b"payload"]), mock.Mock(spec=["read"])])
+def test_auth_rejects_one_shot_uploads(body):
+    auth = HttpNtlmAuth("username", "password", send_cbt=False)
+    response = requests.Response()
+    response.status_code = 401
+    response.headers["WWW-Authenticate"] = "NTLM"
+    response.request = requests.Request("POST", "http://example.test").prepare()
+    response.request.body = body
+    response.raw = mock.Mock(stream=lambda *args, **kwargs: iter(()))
+    response.connection = mock.Mock()
+
+    with pytest.raises(requests.exceptions.RequestException, match="non-rewindable body"):
+        auth.response_hook(response)
+
+    response.connection.send.assert_not_called()

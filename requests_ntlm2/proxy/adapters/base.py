@@ -25,10 +25,10 @@ class HttpProxyAdapter(HTTPAdapter):
 
         parse_result = urlparse(cast(str, request.url))
         if parse_result.scheme == "http":
+            authority = parse_result.netloc.rsplit("@", 1)[-1]
             if parse_result.port == 80:
-                request.headers["Host"] = cast(str, parse_result.hostname)
-            else:
-                request.headers["Host"] = parse_result.netloc
+                authority = authority.rsplit(":", 1)[0]
+            request.headers["Host"] = authority
 
     @staticmethod
     def _is_valid_host_header(request: PreparedRequest) -> bool:
@@ -37,7 +37,7 @@ class HttpProxyAdapter(HTTPAdapter):
             return False
         parse_result = urlparse(cast(str, request.url))
         if parse_result.scheme == "https":
-            if host == parse_result.netloc and parse_result.port is not None:
+            if host == parse_result.netloc.rsplit("@", 1)[-1] and parse_result.port is not None:
                 return True
         return False
 
@@ -56,5 +56,5 @@ class HttpProxyAdapter(HTTPAdapter):
         headers = super().proxy_headers(proxy)
         if self._user_agent and all(k.lower() != "user-agent" for k in headers):
             headers["User-Agent"] = self._user_agent
-        logger.debug("proxy headers: %s", headers)
+        logger.debug("proxy header names: %s", sorted(headers))
         return headers

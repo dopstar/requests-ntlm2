@@ -2,6 +2,7 @@ import base64
 import logging
 import struct
 from typing import Optional, Tuple, Union
+from urllib.request import parse_http_list
 
 import ntlm_auth.constants
 import ntlm_auth.ntlm
@@ -170,8 +171,7 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
         else:
             fixed_challenge_msg = fix_target_info(challenge_msg)
             if fixed_challenge_msg != challenge_msg:
-                logger.debug("original challenge: %s", base64.b64encode(challenge_msg))
-                logger.debug("modified challenge: %s", base64.b64encode(fixed_challenge_msg))
+                logger.debug("Repaired malformed NTLM challenge target info")
             self._challenge_token = fixed_challenge_msg
 
     def create_authenticate_message(self) -> bytes:
@@ -182,23 +182,19 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
         negotiate_message = self.create_negotiate_message().decode("ascii")
         return f"{self._auth_type} {negotiate_message}"
 
-    def set_challenge_from_header(self, raw_header_value: Optional[str]) -> None:
+    def set_challenge_from_header(self, raw_header_value: Optional[str]) -> bool:
         if not raw_header_value:
-            return None
+            return False
 
-        match_strings = (
-            f"{self._auth_type} ",
-            f"Proxy-Authenticate: {self._auth_type} ",
-            f"WWW-Authenticate: {self._auth_type} ",
-        )
-        for header_value in raw_header_value.split(","):
-            header_value = header_value.strip()
-            for auth_strip in match_strings:
-                if header_value.startswith(auth_strip):
-                    challenge = header_value.replace(auth_strip, "")
-                    self.parse_challenge_message(challenge)
-                    return
-        return None
+        for header_value in parse_http_list(raw_header_value):
+            field, _, value = header_value.partition(":")
+            if field.lower() in ("proxy-authenticate", "www-authenticate"):
+                header_value = value
+            parts = header_value.split(None, 1)
+            if len(parts) == 2 and parts[0].lower() == self._auth_type.lower():
+                self.parse_challenge_message(parts[1])
+                return True
+        return False
 
     def get_authenticate_header(self) -> str:
         authenticate_message = self.create_authenticate_message().decode("ascii")

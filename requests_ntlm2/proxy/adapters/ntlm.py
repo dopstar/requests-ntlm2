@@ -1,18 +1,14 @@
 from typing import TYPE_CHECKING, Any, Optional
 
 from ...compatibility import NtlmCompatibility
-from ..connection import DEFAULT_HTTP_VERSION
-from ..connection import HTTPConnection as _HTTPConnection
-from ..connection import HTTPSConnection as _HTTPSConnection
+from ..connection import DEFAULT_HTTP_VERSION, VerifiedHTTPSConnection
 from .base import HttpProxyAdapter
 
 
 if TYPE_CHECKING:
-    from urllib3.connection import HTTPConnection, HTTPSConnection
-    from urllib3.poolmanager import pool_classes_by_scheme
+    from urllib3.connectionpool import HTTPSConnectionPool
 else:
-    from requests.packages.urllib3.connection import HTTPConnection, HTTPSConnection
-    from requests.packages.urllib3.poolmanager import pool_classes_by_scheme
+    from requests.packages.urllib3.connectionpool import HTTPSConnectionPool
 
 
 class HttpNtlmAdapter(HttpProxyAdapter):
@@ -29,40 +25,25 @@ class HttpNtlmAdapter(HttpProxyAdapter):
         """
         Thin wrapper around requests.adapters.HTTPAdapter
         """
-        self._setup(
-            ntlm_username,
-            ntlm_password,
-            ntlm_compatibility,
-            ntlm_strict_mode,
-            proxy_tunnelling_http_version
-        )
+        class NtlmHTTPSConnection(VerifiedHTTPSConnection):
+            pass
+
+        NtlmHTTPSConnection.set_ntlm_auth_credentials(ntlm_username, ntlm_password)
+        NtlmHTTPSConnection.ntlm_compatibility = ntlm_compatibility
+        NtlmHTTPSConnection.ntlm_strict_mode = ntlm_strict_mode
+        if proxy_tunnelling_http_version:
+            NtlmHTTPSConnection.set_http_version(proxy_tunnelling_http_version)
+
+        class NtlmHTTPSConnectionPool(HTTPSConnectionPool):
+            ConnectionCls = NtlmHTTPSConnection  # pyright: ignore[reportAssignmentType]
+
+        self._ntlm_pool_class = NtlmHTTPSConnectionPool
         super().__init__(*args, **kwargs)
 
-    def close(self) -> None:
-        self._teardown()
-        super().close()
-
-    @staticmethod
-    def _setup(
-        username: str,
-        password: str,
-        ntlm_compatibility: int,
-        ntlm_strict_mode: bool,
-        http_version: Optional[str],
-    ) -> None:
-        pool_classes_by_scheme["http"].ConnectionCls = _HTTPConnection
-        pool_classes_by_scheme["https"].ConnectionCls = _HTTPSConnection
-        _HTTPSConnection.set_ntlm_auth_credentials(username, password)
-
-        if http_version:
-            _HTTPSConnection.set_http_version(http_version)
-
-        _HTTPSConnection.ntlm_compatibility = ntlm_compatibility
-        _HTTPConnection.ntlm_strict_mode = ntlm_strict_mode
-
-    @staticmethod
-    def _teardown() -> None:
-        pool_classes_by_scheme["http"].ConnectionCls = HTTPConnection
-        pool_classes_by_scheme["https"].ConnectionCls = HTTPSConnection
-        _HTTPSConnection.clear_ntlm_auth_credentials()
-        _HTTPSConnection.clear_http_version()
+    def proxy_manager_for(self, proxy: str, **proxy_kwargs: Any) -> Any:
+        manager = super().proxy_manager_for(proxy, **proxy_kwargs)
+        pool_classes = manager.pool_classes_by_scheme
+        if pool_classes["https"] is HTTPSConnectionPool:
+            # Copy the mapping so neither the defaults nor other adapters are affected.
+            manager.pool_classes_by_scheme = dict(pool_classes, https=self._ntlm_pool_class)
+        return manager

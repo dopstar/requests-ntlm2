@@ -5,6 +5,8 @@ import socket
 from http.client import PROXY_AUTHENTICATION_REQUIRED, HTTPResponse, LineTooLong
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple, Union, cast
 
+from requests.structures import CaseInsensitiveDict
+
 from ..compatibility import NtlmCompatibility
 from ..dance import HttpNtlmContext, get_ntlm_credentials
 
@@ -34,18 +36,6 @@ _MAXLINE = 65536
 _ASSUMED_HTTP09_STATUS_LINES = (
     ("HTTP/0.9", 200, ""),
     ("HTTP/0.9", 200, "OK"),
-)
-
-_TRACKED_HEADERS = (
-    "proxy-authenticate",
-    "proxy-support",
-    "cache-control",
-    "date",
-    "server",
-    "proxy-connection",
-    "connection",
-    "content-length",
-    "content-type",
 )
 
 HTTP_VERSION_11 = "HTTP/1.1"
@@ -115,7 +105,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
     def _read_response_line_if_ready(response: HTTPResponse) -> Optional[bytes]:
         (ready, _, _) = select.select([response.fp], (), (), IO_WAIT_TIMEOUT)
         if ready:
-            return response.fp.readline()
+            return response.fp.readline(_MAXLINE + 1)
         return None
 
     def _flush_response_buffer(self, response: HTTPResponse) -> None:
@@ -124,7 +114,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
             line_count += 1
             logger.debug("* reading line from response buffer")
             line = self._read_response_line_if_ready(response)
-            logger.debug("< line %s: %r", line_count, line)
+            logger.debug("< read line %s", line_count)
             if not line:
                 logger.debug("* finished draining the socket")
                 break
@@ -138,7 +128,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         )
 
         while True:
-            line = response.fp.readline()
+            line = response.fp.readline(_MAXLINE + 1)
             if not line:
                 self._continue_reading_headers = False
                 break
@@ -179,15 +169,16 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         http_connect_string = f"CONNECT {host}:{port} {self._get_http_version()}\r\n"
         logger.debug("> %r", http_connect_string)
         header_bytes = http_connect_string
+        headers = CaseInsensitiveDict(self._tunnel_headers)
         if proxy_auth_header:
-            self._tunnel_headers["Proxy-Authorization"] = proxy_auth_header
-        self._tunnel_headers["Proxy-Connection"] = "Keep-Alive"
-        self._tunnel_headers["Host"] = f"{host}:{port}"
+            headers["Proxy-Authorization"] = proxy_auth_header
+        headers["Proxy-Connection"] = "Keep-Alive"
+        headers["Host"] = f"{host}:{port}"
 
-        for header in sorted(self._tunnel_headers):
-            value = self._tunnel_headers[header]
+        for header in sorted(headers):
+            value = headers[header]
             header_byte = f"{header}: {value}\r\n"
-            logger.debug("> %r", header_byte)
+            logger.debug("> header %s", header)
             header_bytes += header_byte
         header_bytes += "\r\n"
         return header_bytes.encode("latin1")
@@ -195,7 +186,6 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
     def _tunnel(self) -> None:
         username, password, domain = cast(Tuple[str, str, str], self._ntlm_credentials)
         logger.debug("* attempting to open tunnel using HTTP CONNECT")
-        logger.debug("* username=%r, domain=%r", username, domain)
 
         try:
             workstation = socket.gethostname().upper()
@@ -222,17 +212,15 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
 
         if code == PROXY_AUTHENTICATION_REQUIRED:
             authenticate_hdr = None
-            match_string = "Proxy-Authenticate: NTLM "
             last_line_is_blank = False
             line_count = 1
             while True:
                 line_count += 1
                 logger.debug("* reading line number %s", line_count)
                 if last_line_is_blank:
-                    line = self._read_response_line_if_ready(response)
+                    line = self._read_response_line_if_ready(response) or b""
                 else:
-                    line = response.fp.readline()
-                logger.debug("* read line: %r", line)
+                    line = response.fp.readline(_MAXLINE + 1)
                 this_line_is_blank = self._is_line_blank(line)
                 if last_line_is_blank and this_line_is_blank:
                     self._flush_response_buffer(response)
@@ -244,31 +232,32 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                 else:
                     last_line_is_blank = False
 
-                if line is not None and line.decode("utf-8").startswith(match_string):
-                    logger.debug("< %r", line)
-                    ntlm_context.set_challenge_from_header(line.decode("utf-8"))
+                if len(line) > _MAXLINE:
+                    raise LineTooLong("header line")
+
+                name, _, value = line.partition(b":")
+                if (
+                    name.lower() == b"proxy-authenticate"
+                    and ntlm_context.set_challenge_from_header(value.decode("latin1"))
+                ):
                     authenticate_hdr = ntlm_context.get_authenticate_header()
                     self._flush_response_buffer(response)
                     break
 
-                if line is not None and len(line) > _MAXLINE:
-                    raise LineTooLong("header line")
-
-                logger.debug("< %r", line)
-
-            if not authenticate_hdr:
+            if authenticate_hdr:
+                header_bytes = self._get_header_bytes(proxy_auth_header=authenticate_hdr)
+                logger.debug("* sending the NTLM authenticate message")
+                self.send(header_bytes)
+                version, code, message, response = self._get_response()
+            else:
                 logger.warning("* the NTLM challenge header was not found!")
-            header_bytes = self._get_header_bytes(proxy_auth_header=authenticate_hdr)
-            logger.debug("* sending the NTLM authenticate message")
-            self.send(header_bytes)
-            version, code, message, response = self._get_response()
 
         if code != 200:
             logger.error("* HTTP %s: failed to establish NTLM proxy tunnel", code)
             self.close()
             raise OSError(f"Tunnel connection failed: {code:d} {message.strip()}")
         while self._continue_reading_headers:
-            line = response.fp.readline()
+            line = response.fp.readline(_MAXLINE + 1)
             if line is not None and len(line) > _MAXLINE:
                 raise LineTooLong("header line")
             if line is None or self._is_line_blank(line):
