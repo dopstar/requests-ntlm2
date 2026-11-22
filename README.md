@@ -18,12 +18,24 @@ pip install requests-ntlm2
 
 ## Usage
 
+Import classes from the module that defines them. The package root loads no
+authentication or proxy code.
+
+| Class | Import from |
+| --- | --- |
+| `HttpNtlmAuth` | `requests_ntlm2.auth` |
+| `NtlmCompatibility` | `requests_ntlm2.compatibility` |
+| `HttpProxyAdapter` | `requests_ntlm2.proxy.adapters.base` |
+| `HttpNtlmAdapter` | `requests_ntlm2.proxy.adapters.ntlm` |
+| `HTTPConnection`, `HTTPSConnection`, `VerifiedHTTPSConnection` | `requests_ntlm2.proxy.connection` |
+
+
 ### Basic Usage
 `HttpNtlmAuth` extends requests `AuthBase`, so usage is simple:
 
 ```python
 import requests
-from requests_ntlm2 import HttpNtlmAuth
+from requests_ntlm2.auth import HttpNtlmAuth
 
 auth=HttpNtlmAuth('domain\\username','password')
 requests.get("http://ntlm_protected_site.com", auth=auth)
@@ -37,7 +49,8 @@ compatibility level 3 which supports NTLMv2 [only]. You can change the compatibi
 
 ```python
 import requests
-from requests_ntlm2 import HttpNtlmAuth, NtlmCompatibility
+from requests_ntlm2.auth import HttpNtlmAuth
+from requests_ntlm2.compatibility import NtlmCompatibility
 
 username = 'domain\\username'
 password = 'password123'
@@ -56,7 +69,7 @@ NTLM challenge-response.
 
 ```python
 import requests
-from requests_ntlm2 import HttpNtlmAuth
+from requests_ntlm2.auth import HttpNtlmAuth
 
 session = requests.Session()
 session.auth = HttpNtlmAuth('domain\\username','password')
@@ -76,11 +89,9 @@ Here is a basic example:
 
 ```python
 import requests
-from requests_ntlm2 import (
-    HttpNtlmAuth,
-    HttpNtlmAdapter,
-    NtlmCompatibility
-)
+from requests_ntlm2.auth import HttpNtlmAuth
+from requests_ntlm2.compatibility import NtlmCompatibility
+from requests_ntlm2.proxy.adapters.ntlm import HttpNtlmAdapter
 
 username = '...'
 password = '...'
@@ -128,25 +139,20 @@ response = session.get('http:/foobar.com')
 
 ## Development
 
-The package supports Python 3.6 and later. Use [uv](https://docs.astral.sh/uv/)
-with a recent Python for development.
+The package supports Python 3.6 and later. Install [uv](https://docs.astral.sh/uv/)
+and [just](https://just.systems/) to run the development commands.
 
 ```shell
 uv sync --locked --python 3.13
-uv run ruff check requests_ntlm2
-uv run bandit -r requests_ntlm2
-uv build
+just lint
+just test
+just build
 ```
 
-Start the local test server with `uv run python -m tests.test_server`. In a
-second terminal, run `uv run pytest --cov --cov-report=term-missing tests/unit`.
-On Linux with OpenSSL 3 or newer, enable the legacy provider before running
-pytest so NTLM password hashing can use MD4.
-
-```shell
-export OPENSSL_CONF="$PWD/tests/openssl-legacy.cnf"
-export OPENSSL_MODULES="$(openssl version -m | cut -d '"' -f 2)"
-```
+Run `just ruff`, `just bandit`, `just typecheck`, or `just imports` for an individual check.
+`just test` runs pytest with coverage, starts and stops the local test server,
+and enables OpenSSL's legacy provider for the NTLM tests when available. The
+test recipe uses Bash.
 
 The separate functional suite requires Windows IIS. See
 `tests/functional/setup_iis.ps1` for its setup.

@@ -1,12 +1,70 @@
 import base64
 import logging
+import struct
+from typing import Optional, Tuple, Union
 
+import ntlm_auth.constants
 import ntlm_auth.ntlm
+from ntlm_auth.gss_channel_bindings import GssChannelBindingsStruct
+from ntlm_auth.messages import AuthenticateMessage, ChallengeMessage, NegotiateMessage
+from ntlm_auth.session_security import SessionSecurity
 
-from .core import NtlmCompatibility, fix_target_info
+from .compatibility import NtlmCompatibility
 
 
 logger = logging.getLogger(__name__)
+
+
+def get_ntlm_credentials(username: str, password: str) -> Tuple[str, str, str]:
+    try:
+        domain, username = username.split("\\", 1)
+    except ValueError:
+        domain = ""
+    return username, password, domain
+
+
+def is_challenge_message(msg: bytes) -> bool:
+    try:
+        message_type = struct.unpack("<I", msg[8:12])[0]
+        return message_type == ntlm_auth.constants.MessageTypes.NTLM_CHALLENGE
+    except struct.error:
+        return False
+
+
+def is_challenge_message_valid(msg: bytes) -> bool:
+    try:
+        _ = ChallengeMessage(msg)
+        return True
+    except struct.error:
+        return False
+
+
+def fix_target_info(challenge_msg: bytes) -> bytes:
+    if not is_challenge_message(challenge_msg):
+        return challenge_msg
+
+    if is_challenge_message_valid(challenge_msg):
+        return challenge_msg
+
+    signature = challenge_msg[:8]
+    if signature != ntlm_auth.constants.NTLM_SIGNATURE:
+        logger.warning("invalid signature: %r", signature)
+        return challenge_msg
+
+    negotiate_flags_raw = challenge_msg[20:24]
+    try:
+        negotiate_flags = struct.unpack("<I", negotiate_flags_raw)[0]
+    except struct.error:
+        logger.warning("Invalid Negotiate Flags: %s", negotiate_flags_raw)
+        return challenge_msg
+
+    if negotiate_flags & ntlm_auth.constants.NegotiateFlags.NTLMSSP_NEGOTIATE_TARGET_INFO:
+        try:
+            negotiate_flags &= ~ntlm_auth.constants.NegotiateFlags.NTLMSSP_NEGOTIATE_TARGET_INFO
+            return challenge_msg[:20] + struct.pack("<I", negotiate_flags) + challenge_msg[24:]
+        except struct.error:
+            return challenge_msg
+    return challenge_msg
 
 
 class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
@@ -14,15 +72,15 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
 
     def __init__(
         self,
-        username,
-        password,
-        domain=None,
-        workstation=None,
-        cbt_data=None,
-        ntlm_compatibility=NtlmCompatibility.NTLMv2_DEFAULT,
-        auth_type=None,
-        ntlm_strict_mode=False,
-    ):
+        username: str,
+        password: str,
+        domain: Optional[str] = None,
+        workstation: Optional[str] = None,
+        cbt_data: Optional[GssChannelBindingsStruct] = None,
+        ntlm_compatibility: int = NtlmCompatibility.NTLMv2_DEFAULT,
+        auth_type: Optional[str] = None,
+        ntlm_strict_mode: bool = False,
+    ) -> None:
         r"""
         Initialises a NTLM context to use when authenticating using the NTLM
         protocol.
@@ -57,7 +115,7 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
                 f'Expected "NTLM" or "Negotiate" auth_type, got {auth_type}'
             )
         self._auth_type = auth_type
-        self._challenge_token = None
+        self._challenge_token: Optional[bytes] = None
         self.ntlm_strict_mode = ntlm_strict_mode
         super().__init__(
             username,
@@ -69,42 +127,42 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
         )
 
     @property
-    def negotiate_message(self):
+    def negotiate_message(self) -> Optional[NegotiateMessage]:
         return self._negotiate_message
 
     @negotiate_message.setter
-    def negotiate_message(self, value):
+    def negotiate_message(self, value: Optional[NegotiateMessage]) -> None:
         self._negotiate_message = value
 
     @property
-    def challenge_message(self):
+    def challenge_message(self) -> Optional[ChallengeMessage]:
         return self._challenge_message
 
     @challenge_message.setter
-    def challenge_message(self, value):
+    def challenge_message(self, value: Optional[ChallengeMessage]) -> None:
         self._challenge_message = value
 
     @property
-    def authenticate_message(self):
+    def authenticate_message(self) -> Optional[AuthenticateMessage]:
         return self._authenticate_message
 
     @authenticate_message.setter
-    def authenticate_message(self, value):
+    def authenticate_message(self, value: Optional[AuthenticateMessage]) -> None:
         self._authenticate_message = value
 
     @property
-    def session_security(self):
+    def session_security(self) -> Optional[SessionSecurity]:
         return self._session_security
 
     @session_security.setter
-    def session_security(self, value):
+    def session_security(self, value: Optional[SessionSecurity]) -> None:
         self._session_security = value
 
-    def create_negotiate_message(self):
+    def create_negotiate_message(self) -> bytes:
         msg = self.step()
         return base64.b64encode(msg)
 
-    def parse_challenge_message(self, msg2):
+    def parse_challenge_message(self, msg2: Union[str, bytes]) -> None:
         challenge_msg = base64.b64decode(msg2)
 
         if self.ntlm_strict_mode:
@@ -116,15 +174,15 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
                 logger.debug("modified challenge: %s", base64.b64encode(fixed_challenge_msg))
             self._challenge_token = fixed_challenge_msg
 
-    def create_authenticate_message(self):
+    def create_authenticate_message(self) -> bytes:
         msg = self.step(self._challenge_token)
         return base64.b64encode(msg)
 
-    def get_negotiate_header(self):
+    def get_negotiate_header(self) -> str:
         negotiate_message = self.create_negotiate_message().decode("ascii")
         return f"{self._auth_type} {negotiate_message}"
 
-    def set_challenge_from_header(self, raw_header_value):
+    def set_challenge_from_header(self, raw_header_value: Optional[str]) -> None:
         if not raw_header_value:
             return None
 
@@ -138,9 +196,10 @@ class HttpNtlmContext(ntlm_auth.ntlm.NtlmContext):
             for auth_strip in match_strings:
                 if header_value.startswith(auth_strip):
                     challenge = header_value.replace(auth_strip, "")
-                    return self.parse_challenge_message(challenge)
+                    self.parse_challenge_message(challenge)
+                    return
         return None
 
-    def get_authenticate_header(self):
+    def get_authenticate_header(self) -> str:
         authenticate_message = self.create_authenticate_message().decode("ascii")
         return f"{self._auth_type} {authenticate_message}"

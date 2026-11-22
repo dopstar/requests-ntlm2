@@ -1,37 +1,30 @@
 import binascii
 import logging
-import struct
 import warnings
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
-import ntlm_auth.constants
 from cryptography import x509
 from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from ntlm_auth.gss_channel_bindings import GssChannelBindingsStruct
-from ntlm_auth.messages import ChallengeMessage
-from requests.packages.urllib3.response import HTTPResponse
+from requests import Response
+
+
+if TYPE_CHECKING:
+    from urllib3.response import HTTPResponse
+else:
+    from requests.packages.urllib3.response import HTTPResponse
 
 
 logger = logging.getLogger(__name__)
-
-
-class NtlmCompatibility:
-    # see Microsoft doc on compatibility levels here: https://bit.ly/2OWZVxp
-    LM_AND_NTLMv1 = 0
-    LM_AND_NTLMv1_WITH_ESS = 1
-    NTLMv1_WITH_ESS = 2
-    NTLMv2_DEFAULT = 3
-    NTLMv2_LEVEL4 = 4
-    NTLMv2_LEVEL5 = 5
 
 
 class UnknownSignatureAlgorithmOID(Warning):
     pass
 
 
-def get_server_cert(response):
+def get_server_cert(response: Response) -> Optional[bytes]:
     """
     Get the certificate at the request_url and return it as a hash. Will
     get the raw socket from the original response from the server. This
@@ -49,7 +42,10 @@ def get_server_cert(response):
 
     if isinstance(raw_response, HTTPResponse):
         try:
-            socket = raw_response._fp.fp.raw._sock
+            fp = raw_response._fp
+            if fp is None:
+                return None
+            socket = getattr(fp.fp.raw, "_sock")
         except AttributeError:
             return None
 
@@ -73,6 +69,8 @@ def get_certificate_hash_bytes(certificate_der: bytes) -> Optional[bytes]:
 
     try:
         hash_algorithm = cert.signature_hash_algorithm
+        if hash_algorithm is None:
+            raise UnsupportedAlgorithm("The certificate signature has no separate hash algorithm")
     except UnsupportedAlgorithm as ex:
         logger.exception("e=")
         warnings.warn(
@@ -95,28 +93,7 @@ def get_certificate_hash_bytes(certificate_der: bytes) -> Optional[bytes]:
     return certificate_hash_bytes
 
 
-def get_auth_type_from_header(header: str) -> Optional[str]:
-    """
-    Given a WWW-Authenticate or Proxy-Authenticate header, returns the
-    authentication type to use. We prefer NTLM over Negotiate if the server
-    supports it.
-    """
-    if "ntlm" in header.lower():
-        return "NTLM"
-    elif "negotiate" in header.lower():
-        return "Negotiate"
-    return None
-
-
-def get_ntlm_credentials(username: str, password: str) -> Tuple[str, str, str]:
-    try:
-        domain, username = username.split("\\", 1)
-    except ValueError:
-        domain = ""
-    return username, password, domain
-
-
-def get_cbt_data(response):
+def get_cbt_data(response: Response) -> Optional[GssChannelBindingsStruct]:
     """
     Create Channel Binding for TLS data
 
@@ -142,51 +119,3 @@ def get_cbt_data(response):
     cbt_data[data_type] = b":".join([channel_binding_type, cert_hash_bytes])
     logger.debug("cbt data: %s", cbt_data.get_data())
     return cbt_data
-
-
-def is_challenge_message(msg: bytes) -> bool:
-    try:
-        message_type = struct.unpack("<I", msg[8:12])[0]
-        return message_type == ntlm_auth.constants.MessageTypes.NTLM_CHALLENGE
-    except struct.error:
-        return False
-
-
-def is_challenge_message_valid(msg: bytes) -> bool:
-    try:
-        _ = ChallengeMessage(msg)
-        return True
-    except struct.error:
-        return False
-
-
-def fix_target_info(challenge_msg: bytes) -> bytes:
-    if not is_challenge_message(challenge_msg):
-        return challenge_msg
-
-    if is_challenge_message_valid(challenge_msg):
-        return challenge_msg
-
-    signature = challenge_msg[:8]
-    if signature != ntlm_auth.constants.NTLM_SIGNATURE:
-        logger.warning("invalid signature: %r", signature)
-        return challenge_msg
-
-    negotiate_flags_raw = challenge_msg[20:24]
-    try:
-        negotiate_flags = struct.unpack("<I", negotiate_flags_raw)[0]
-    except struct.error:
-        logger.warning("Invalid Negotiate Flags: %s", negotiate_flags_raw)
-        return challenge_msg
-
-    if negotiate_flags & ntlm_auth.constants.NegotiateFlags.NTLMSSP_NEGOTIATE_TARGET_INFO:
-        try:
-            negotiate_flags &= ~ntlm_auth.constants.NegotiateFlags.NTLMSSP_NEGOTIATE_TARGET_INFO
-            return challenge_msg[:20] + struct.pack("<I", negotiate_flags) + challenge_msg[24:]
-        except struct.error:
-            return challenge_msg
-    return challenge_msg
-
-
-def noop():
-    pass

@@ -1,9 +1,26 @@
 import io
+from typing import Any, BinaryIO, Dict, Optional, Tuple, cast
 
+from ntlm_auth.session_security import SessionSecurity
+from requests import PreparedRequest, Response
 from requests.auth import AuthBase
 
-from .core import NtlmCompatibility, get_auth_type_from_header, get_cbt_data, get_ntlm_credentials
-from .dance import HttpNtlmContext
+from ._channel_binding import get_cbt_data
+from .compatibility import NtlmCompatibility
+from .dance import HttpNtlmContext, get_ntlm_credentials
+
+
+def get_auth_type_from_header(header: str) -> Optional[str]:
+    """
+    Given a WWW-Authenticate or Proxy-Authenticate header, returns the
+    authentication type to use. We prefer NTLM over Negotiate if the server
+    supports it.
+    """
+    if "ntlm" in header.lower():
+        return "NTLM"
+    elif "negotiate" in header.lower():
+        return "Negotiate"
+    return None
 
 
 class HttpNtlmAuth(AuthBase):
@@ -12,12 +29,13 @@ class HttpNtlmAuth(AuthBase):
     """
 
     def __init__(
-        self, username,
-        password,
-        send_cbt=True,
-        ntlm_compatibility=NtlmCompatibility.NTLMv2_DEFAULT,
-        ntlm_strict_mode=False
-    ):
+        self,
+        username: str,
+        password: str,
+        send_cbt: bool = True,
+        ntlm_compatibility: int = NtlmCompatibility.NTLMv2_DEFAULT,
+        ntlm_strict_mode: bool = False,
+    ) -> None:
         """Create an authentication handler for NTLM over HTTP.
 
         :param str username: Username in 'domain\\username' format
@@ -42,11 +60,16 @@ class HttpNtlmAuth(AuthBase):
         # messages sent after ntlm authentication. These methods are utilised
         # by libraries that call requests_ntlm to encrypt and decrypt the
         # messages sent after authentication
-        self.session_security = None
+        self.session_security: Optional[SessionSecurity] = None
 
     def retry_using_http_ntlm_auth(
-        self, auth_header_field, auth_header, response, auth_type, kwargs
-    ):
+        self,
+        auth_header_field: str,
+        auth_header: str,
+        response: Response,
+        auth_type: str,
+        kwargs: Dict[str, Any],
+    ) -> Response:
         # Get the certificate of the server if using HTTPS for CBT
         cbt_data = None
         if self.send_cbt:
@@ -59,14 +82,16 @@ class HttpNtlmAuth(AuthBase):
         content_length = int(
             response.request.headers.get("Content-Length", "0"), base=10
         )
-        if hasattr(response.request.body, "seek"):
+        body = response.request.body
+        if hasattr(body, "seek"):
+            seek = cast(BinaryIO, body).seek
             if content_length > 0:
                 try:
-                    response.request.body.seek(-content_length, 1)
+                    seek(-content_length, 1)
                 except (io.UnsupportedOperation, OSError, ValueError):
-                    response.request.body.seek(0, 0)
+                    seek(0, 0)
             else:
-                response.request.body.seek(0, 0)
+                seek(0, 0)
 
         # Consume content and release the original connection
         # to allow our new request to reuse the same one.
@@ -105,8 +130,9 @@ class HttpNtlmAuth(AuthBase):
         # this is important for some web applications that store
         # authentication-related info in cookies (it took a long time to
         # figure out)
-        if response2.headers.get("set-cookie"):
-            request.headers["Cookie"] = response2.headers.get("set-cookie")
+        cookie = response2.headers.get("set-cookie")
+        if cookie:
+            request.headers["Cookie"] = cookie
 
         # get the challenge
         ntlm_context.set_challenge_from_header(response2.headers[auth_header_field])
@@ -126,7 +152,7 @@ class HttpNtlmAuth(AuthBase):
 
         return response3
 
-    def response_hook(self, r, **kwargs):
+    def response_hook(self, r: Response, **kwargs: Any) -> Response:
         """The actual hook handler."""
         if r.status_code == 401:
             # Handle server auth.
@@ -148,7 +174,7 @@ class HttpNtlmAuth(AuthBase):
 
         return r
 
-    def __call__(self, r):
+    def __call__(self, r: PreparedRequest) -> PreparedRequest:
         # we must keep the connection because NTLM authenticates the
         # connection, not single requests
         r.headers["Connection"] = "Keep-Alive"
@@ -156,7 +182,7 @@ class HttpNtlmAuth(AuthBase):
         r.register_hook("response", self.response_hook)
         return r
 
-    def extract_username_and_password(self):
+    def extract_username_and_password(self) -> Tuple[str, str]:
         if self.domain:
             return f"{self.domain}\\{self.username}", self.password
         return self.username, self.password
