@@ -1,7 +1,8 @@
+"""Requests adapter configuration for NTLM-authenticated CONNECT tunnels."""
+
 from typing import TYPE_CHECKING, Any, Optional
 
-from ...compatibility import NtlmCompatibility
-from ..connection import DEFAULT_HTTP_VERSION
+from ...constants import DEFAULT_HTTP_VERSION, NtlmCompatibility
 from ..connection import HTTPConnection as _HTTPConnection
 from ..connection import HTTPSConnection as _HTTPSConnection
 from .base import HttpProxyAdapter
@@ -16,6 +17,7 @@ else:
 
 
 class HttpNtlmAdapter(HttpProxyAdapter):
+    """Configure urllib3's connection pools for NTLM authentication during proxy CONNECT."""
     def __init__(
         self,
         ntlm_username: str,
@@ -39,6 +41,7 @@ class HttpNtlmAdapter(HttpProxyAdapter):
         super().__init__(*args, **kwargs)
 
     def close(self) -> None:
+        """Restore the default urllib3 connection classes and close the adapter pools."""
         self._teardown()
         super().close()
 

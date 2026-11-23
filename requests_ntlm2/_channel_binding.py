@@ -1,3 +1,5 @@
+"""TLS peer certificate hashing for NTLM channel binding."""
+
 import binascii
 import logging
 import warnings
@@ -21,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class UnknownSignatureAlgorithmOID(Warning):
+    """Signal that the certificate signature has no usable hash algorithm."""
     pass
 
 
@@ -34,9 +37,9 @@ def get_server_cert(response: Response) -> Optional[bytes]:
     is not urllib3 HTTPResponse (default with requests) then no certificate
     will be returned.
 
-    :param response: The original 401 response from the server
+    :param response: The original server 401 or proxy 407 response
     :return: The hash of the DER encoded certificate at the request_url or None
-        if not an HTTPS url.
+        if the peer certificate or its hash is unavailable.
     """
     raw_response = response.raw
 
@@ -64,6 +67,11 @@ def get_server_cert(response: Response) -> Optional[bytes]:
 
 
 def get_certificate_hash_bytes(certificate_der: bytes) -> Optional[bytes]:
+    """Hash the DER-encoded certificate for TLS channel binding.
+
+    Use the certificate signature hash algorithm, substituting SHA-256 for
+    MD5 and SHA-1. Return None and warn if the algorithm is unavailable.
+    """
     # https://tools.ietf.org/html/rfc5929#section-4.1
     cert = x509.load_der_x509_certificate(certificate_der, default_backend())
 

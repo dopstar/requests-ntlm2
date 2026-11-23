@@ -1,3 +1,5 @@
+"""Host and User-Agent header handling for Requests proxy adapters."""
+
 import logging
 from typing import Any, Dict, Optional, cast
 from urllib.parse import urlparse
@@ -10,9 +12,11 @@ logger = logging.getLogger(__name__)
 
 
 class HttpProxyAdapter(HTTPAdapter):
+    """Normalize destination Host headers and provide a proxy User-Agent fallback."""
     def __init__(
         self, user_agent: Optional[str] = None, *args: Any, **kwargs: Any
     ) -> None:
+        """Configure an optional proxy User-Agent and forward pool options to Requests."""
         self._user_agent = user_agent
         super().__init__(*args, **kwargs)
 
@@ -49,10 +53,12 @@ class HttpProxyAdapter(HTTPAdapter):
             pass
 
     def add_headers(self, request: PreparedRequest, **kwargs: Any) -> None:
+        """Apply Requests' adapter headers and normalize the destination Host header."""
         super().add_headers(request, **kwargs)
         self._add_host_header(request)
 
     def proxy_headers(self, proxy: str) -> Dict[str, str]:
+        """Return proxy headers, adding the configured User-Agent when one is absent."""
         headers = super().proxy_headers(proxy)
         if self._user_agent and all(k.lower() != "user-agent" for k in headers):
             headers["User-Agent"] = self._user_agent

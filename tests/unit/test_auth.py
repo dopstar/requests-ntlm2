@@ -5,7 +5,7 @@ import faker
 import requests
 
 from requests_ntlm2.auth import HttpNtlmAuth, get_auth_type_from_header
-from requests_ntlm2.compatibility import NtlmCompatibility
+from requests_ntlm2.constants import NtlmCompatibility
 from tests.test_utils import domain, password, username
 
 
