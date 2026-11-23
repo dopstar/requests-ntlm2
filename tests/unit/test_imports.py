@@ -8,7 +8,7 @@ import pytest
     "module, excluded",
     [
         ("requests_ntlm2", ("requests", "ntlm_auth", "cryptography", "requests_ntlm2.")),
-        ("requests_ntlm2.compatibility", ("requests", "ntlm_auth", "cryptography")),
+        ("requests_ntlm2.constants", ("requests", "ntlm_auth", "cryptography")),
         ("requests_ntlm2.auth", ("requests_ntlm2.proxy",)),
         (
             "requests_ntlm2.proxy.adapters.base",

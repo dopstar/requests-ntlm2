@@ -7,7 +7,7 @@ import ntlm_auth.ntlm
 import pytest
 
 from requests_ntlm2 import dance
-from requests_ntlm2.compatibility import NtlmCompatibility
+from requests_ntlm2.constants import NtlmCompatibility
 
 
 class TestHttpNtlmContext:

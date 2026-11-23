@@ -1,3 +1,5 @@
+"""Requests response hooks for the NTLM challenge-response exchange."""
+
 import io
 from typing import Any, BinaryIO, Dict, Optional, Tuple, cast
 
@@ -6,7 +8,7 @@ from requests import PreparedRequest, Response
 from requests.auth import AuthBase
 
 from ._channel_binding import get_cbt_data
-from .compatibility import NtlmCompatibility
+from .constants import NtlmCompatibility
 from .dance import HttpNtlmContext, get_ntlm_credentials
 
 
@@ -43,8 +45,8 @@ class HttpNtlmAuth(AuthBase):
         :param bool send_cbt: Will send the channel bindings over a
                               HTTPS channel (Default: True)
         :param ntlm_compatibility: The Lan Manager Compatibility Level to use with the auth message
-        :param ntlm_strict_mode: If False, tries to Type 2 (ie challenge response) NTLM message
-                                that does not conform to the NTLM spec
+        :param ntlm_strict_mode: If False, attempt to repair malformed target info in Type 2 NTLM
+                                challenge messages.
         """
 
         self.username, self.password, self.domain = get_ntlm_credentials(username, password)
@@ -70,6 +72,7 @@ class HttpNtlmAuth(AuthBase):
         auth_type: str,
         kwargs: Dict[str, Any],
     ) -> Response:
+        """Send the negotiate and authenticate requests and retain both intermediate responses."""
         # Get the certificate of the server if using HTTPS for CBT
         cbt_data = None
         if self.send_cbt:
@@ -183,6 +186,7 @@ class HttpNtlmAuth(AuthBase):
         return r
 
     def extract_username_and_password(self) -> Tuple[str, str]:
+        """Return the username and password, restoring the domain prefix when present."""
         if self.domain:
             return f"{self.domain}\\{self.username}", self.password
         return self.username, self.password

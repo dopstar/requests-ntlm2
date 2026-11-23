@@ -1,3 +1,4 @@
+import base64
 import importlib.util
 import socket
 import tempfile
@@ -8,7 +9,8 @@ from unittest import mock
 
 import faker
 
-from requests_ntlm2.proxy.connection import _MAXLINE, VerifiedHTTPSConnection
+from requests_ntlm2.constants import MAX_HEADER_LINE_LENGTH
+from requests_ntlm2.proxy.connection import VerifiedHTTPSConnection
 
 
 class TestVerifiedHTTPSConnection(unittest.TestCase):
@@ -122,7 +124,7 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
             b"Server: nginx\r\n"
             b"\r\n"
             b"this is the body\r\n"
-            b"\r\n" % (b"x" * _MAXLINE)
+            b"\r\n" % (b"x" * MAX_HEADER_LINE_LENGTH)
         )
         response = type("Response", (), dict(fp=fp))
         mock_get_response.return_value = "HTTP/1.1", 407, "Proxy Authentication Required", response
@@ -203,7 +205,7 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
     def test_tunnel(self, mock_send, mock_get_response, mock_select):
         fp = BytesIO(
             b"Proxy-Agent: test-proxy\r\n"
-            b"Proxy-Authenticate: NTLM TlRMTVNTUAACAAAABgAGADgAAAAGgokAyYpGWqVMA/QAAAAAAAAA"
+            b"pRoXy-AuThEnTiCaTe: nTlM TlRMTVNTUAACAAAABgAGADgAAAAGgokAyYpGWqVMA/QAAAAAAAAA"
             b"AH4AfgA+AAAABQCTCAAAAA9ERVROU1cCAAwARABFAFQATgBTAFcAAQAaAFMARwAtADQAOQAxADMAM"
             b"wAwADAAMAAwADkABAAUAEQARQBUAE4AUwBXAC4AVwBJAE4AAwAwAHMAZwAtADQAOQAxADMAMwAwAD"
             b"AAMAAwADkALgBkAGUAdABuAHMAdwAuAHcAaQBuAAAAAAA=\r\n"
@@ -236,6 +238,9 @@ class TestVerifiedHTTPSConnection(unittest.TestCase):
         mock_send.assert_called()
         self.assertEqual(mock_get_response.call_count, 2)
         self.assertEqual(mock_send.call_count, 2)
+        authenticate_request = mock_send.call_args_list[1][0][0]
+        token = authenticate_request.split(b"Proxy-Authorization: NTLM ", 1)[1].split(b"\r\n", 1)[0]
+        self.assertTrue(base64.b64decode(token).startswith(b"NTLMSSP\x00\x03\x00\x00\x00"))
 
     @mock.patch("requests_ntlm2.proxy.connection.select.select")
     @mock.patch("requests_ntlm2.proxy.connection.VerifiedHTTPSConnection._get_response")

@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "requests-ntlm2"
-version = "7.0.0"
+version = "7.1.0"
 description = "The HTTP NTLM proxy and/or server authentication library."
 readme = "README.md"
 requires-python = ">=3.6"

@@ -24,11 +24,12 @@ authentication or proxy code.
 | Class | Import from |
 | --- | --- |
 | `HttpNtlmAuth` | `requests_ntlm2.auth` |
-| `NtlmCompatibility` | `requests_ntlm2.compatibility` |
+| `NtlmCompatibility` | `requests_ntlm2.constants` |
 | `HttpProxyAdapter` | `requests_ntlm2.proxy.adapters.base` |
 | `HttpNtlmAdapter` | `requests_ntlm2.proxy.adapters.ntlm` |
 | `HTTPConnection`, `HTTPSConnection`, `VerifiedHTTPSConnection` | `requests_ntlm2.proxy.connection` |
 
+The original `requests_ntlm2.compatibility.NtlmCompatibility` import path also works.
 
 ### Basic Usage
 `HttpNtlmAuth` extends requests `AuthBase`, so usage is simple:
@@ -50,7 +51,7 @@ compatibility level 3 which supports NTLMv2 [only]. You can change the compatibi
 ```python
 import requests
 from requests_ntlm2.auth import HttpNtlmAuth
-from requests_ntlm2.compatibility import NtlmCompatibility
+from requests_ntlm2.constants import NtlmCompatibility
 
 username = 'domain\\username'
 password = 'password123'
@@ -90,7 +91,7 @@ Here is a basic example:
 ```python
 import requests
 from requests_ntlm2.auth import HttpNtlmAuth
-from requests_ntlm2.compatibility import NtlmCompatibility
+from requests_ntlm2.constants import NtlmCompatibility
 from requests_ntlm2.proxy.adapters.ntlm import HttpNtlmAdapter
 
 username = '...'

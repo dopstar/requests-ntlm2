@@ -1,3 +1,5 @@
+"""HTTPS connections that authenticate during the proxy CONNECT exchange."""
+
 import logging
 import re
 import select
@@ -5,7 +7,15 @@ import socket
 from http.client import PROXY_AUTHENTICATION_REQUIRED, HTTPResponse, LineTooLong
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple, Union, cast
 
-from ..compatibility import NtlmCompatibility
+from ..constants import (
+    ASSUMED_HTTP09_STATUS_LINES,
+    DEFAULT_HTTP_VERSION,
+    HTTP_VERSION_10,
+    HTTP_VERSION_11,
+    IO_WAIT_TIMEOUT,
+    MAX_HEADER_LINE_LENGTH,
+    NtlmCompatibility,
+)
 from ..dance import HttpNtlmContext, get_ntlm_credentials
 
 
@@ -23,41 +33,16 @@ else:
     )
 
 
-IO_WAIT_TIMEOUT = 0.1
-
-
 logger = logging.getLogger(__name__)
-
-# maximal line length when calling readline().
-_MAXLINE = 65536
-
-_ASSUMED_HTTP09_STATUS_LINES = (
-    ("HTTP/0.9", 200, ""),
-    ("HTTP/0.9", 200, "OK"),
-)
-
-_TRACKED_HEADERS = (
-    "proxy-authenticate",
-    "proxy-support",
-    "cache-control",
-    "date",
-    "server",
-    "proxy-connection",
-    "connection",
-    "content-length",
-    "content-type",
-)
-
-HTTP_VERSION_11 = "HTTP/1.1"
-HTTP_VERSION_10 = "HTTP/1.0"
-DEFAULT_HTTP_VERSION = HTTP_VERSION_10
 
 
 class HTTPConnection(_HTTPConnection):
+    """Expose the urllib3 HTTP connection class used by the proxy adapter."""
     ntlm_strict_mode: ClassVar[bool]
 
 
 class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
+    """Perform the NTLM exchange on the proxy connection before destination TLS."""
     if TYPE_CHECKING:
         # Private http.client members used by the CONNECT handshake.
         _method: Optional[str]
@@ -73,6 +58,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
     ntlm_strict_mode = False
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the HTTPS connection and enable reads of CONNECT response headers."""
         super().__init__(*args, **kwargs)
         self._continue_reading_headers = True
         if self.ntlm_compatibility is None:
@@ -80,10 +66,12 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
 
     @classmethod
     def set_ntlm_auth_credentials(cls, username: str, password: str) -> None:
+        """Store the parsed proxy credentials on the connection class."""
         cls._ntlm_credentials = get_ntlm_credentials(username, password)
 
     @classmethod
     def set_http_version(cls, http_version: str) -> None:
+        """Select HTTP/1.0 or HTTP/1.1 for CONNECT, falling back to the default."""
         if http_version in (HTTP_VERSION_10, HTTP_VERSION_11):
             cls._http_version = http_version
         else:
@@ -96,11 +84,13 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
 
     @classmethod
     def clear_http_version(cls) -> None:
+        """Remove the class-level CONNECT version override."""
         cls._http_version = None
         del cls._http_version
 
     @classmethod
     def clear_ntlm_auth_credentials(cls) -> None:
+        """Remove proxy credentials from the connection class."""
         cls._ntlm_credentials = None
         del cls._ntlm_credentials
 
@@ -132,6 +122,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
     def handle_http09_response(
         self, response: HTTPResponse
     ) -> Optional[Tuple[bytes, int, bytes]]:
+        """Look for an embedded HTTP status line in a legacy proxy response."""
         status_line_regex = re.compile(
             br"(?P<version>HTTP/\d\.\d)\s+(?P<status>\d+)\s+(?P<message>.+)",
             re.DOTALL
@@ -155,7 +146,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         response = self.response_class(self.sock, method=self._method)
         version, code, message = response._read_status()  # pyright: ignore[reportAttributeAccessIssue]
 
-        if (version, code, message) in _ASSUMED_HTTP09_STATUS_LINES:
+        if (version, code, message) in ASSUMED_HTTP09_STATUS_LINES:
             logger.warning("server response used outdated HTTP version: HTTP/0.9")
             status_line = self.handle_http09_response(response)
             if status_line:
@@ -175,6 +166,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         return getattr(self, "_http_version", None) or DEFAULT_HTTP_VERSION
 
     def _get_header_bytes(self, proxy_auth_header: Optional[str] = None) -> bytes:
+        """Serialize the CONNECT request line and headers for the tunnel destination."""
         host, port = self._get_hostport(self._tunnel_host, self._tunnel_port)
         http_connect_string = f"CONNECT {host}:{port} {self._get_http_version()}\r\n"
         logger.debug("> %r", http_connect_string)
@@ -193,6 +185,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
         return header_bytes.encode("latin1")
 
     def _tunnel(self) -> None:
+        """Send CONNECT, answer an NTLM proxy challenge, and consume the success headers."""
         username, password, domain = cast(Tuple[str, str, str], self._ntlm_credentials)
         logger.debug("* attempting to open tunnel using HTTP CONNECT")
         logger.debug("* username=%r, domain=%r", username, domain)
@@ -222,7 +215,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
 
         if code == PROXY_AUTHENTICATION_REQUIRED:
             authenticate_hdr = None
-            match_string = "Proxy-Authenticate: NTLM "
+            match_string = "proxy-authenticate: ntlm "
             last_line_is_blank = False
             line_count = 1
             while True:
@@ -244,14 +237,14 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
                 else:
                     last_line_is_blank = False
 
-                if line is not None and line.decode("utf-8").startswith(match_string):
+                if line is not None and line.decode("utf-8").lower().startswith(match_string):
                     logger.debug("< %r", line)
                     ntlm_context.set_challenge_from_header(line.decode("utf-8"))
                     authenticate_hdr = ntlm_context.get_authenticate_header()
                     self._flush_response_buffer(response)
                     break
 
-                if line is not None and len(line) > _MAXLINE:
+                if line is not None and len(line) > MAX_HEADER_LINE_LENGTH:
                     raise LineTooLong("header line")
 
                 logger.debug("< %r", line)
@@ -269,7 +262,7 @@ class VerifiedHTTPSConnection(_VerifiedHTTPSConnection):
             raise OSError(f"Tunnel connection failed: {code:d} {message.strip()}")
         while self._continue_reading_headers:
             line = response.fp.readline()
-            if line is not None and len(line) > _MAXLINE:
+            if line is not None and len(line) > MAX_HEADER_LINE_LENGTH:
                 raise LineTooLong("header line")
             if line is None or self._is_line_blank(line):
                 break
@@ -281,6 +274,7 @@ if TYPE_CHECKING:
     HTTPSConnection = VerifiedHTTPSConnection
 else:
     class HTTPSConnection(_HTTPSConnection):
+        """Provide the underlying urllib3 HTTPS class before selecting the TLS-capable alias."""
         pass
 
 
