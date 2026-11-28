@@ -61,7 +61,7 @@ class HttpNtlmAdapter(HttpProxyAdapter):
             _HTTPSConnection.set_http_version(http_version)
 
         _HTTPSConnection.ntlm_compatibility = ntlm_compatibility
-        _HTTPConnection.ntlm_strict_mode = ntlm_strict_mode
+        _HTTPSConnection.ntlm_strict_mode = ntlm_strict_mode
 
     @staticmethod
     def _teardown() -> None:
